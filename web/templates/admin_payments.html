@@ -1,0 +1,63 @@
+{{define "content"}}
+<h2 style="font-size:1.4rem;margin-bottom:1.5rem">Последние оплаты ({{len .Payments}})</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Дата</th>
+            <th>Сумма</th>
+            <th>Статус</th>
+            <th>Провайдер</th>
+            <th>Клиент</th>
+            <th>Контакт</th>
+            <th>T-Bank Order</th>
+            <th>Оплачен</th>
+            <th>Ошибка</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{$ctx := .}}
+        {{range .Payments}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{formatDateTime .CreatedAt}}</td>
+            <td>{{rub .AmountKop}}</td>
+            <td>
+                <span class="status-badge status-{{.Status}}">
+                    {{.Status}}
+                </span>
+            </td>
+            <td>{{.Provider}}</td>
+            <td>
+                {{if .UserName}}{{.UserName}}{{else}}—{{end}}
+                {{if .UserTg}}<br><small style="color:#6b7280">@{{.UserTg}}</small>{{end}}
+            </td>
+            <td>
+                {{if .ContactName}}{{.ContactName}}{{else}}—{{end}}
+                {{if .ContactPhone}}<br><small style="color:#6b7280">{{.ContactPhone}}</small>{{end}}
+            </td>
+            <td><code style="font-size:0.8rem">{{.TBankOrderID}}</code></td>
+            <td>{{if .PaidAt}}{{formatDateTime .PaidAt}}{{else}}—{{end}}</td>
+            <td>{{if .ErrorCode}}<span style="color:#dc2626">{{.ErrorCode}}</span>{{else}}—{{end}}</td>
+            <td>
+                {{if eq .Status "confirmed"}}
+                <form method="POST" action="/admin/payments/{{.ID}}/refund"
+                      onsubmit="return confirm('Верратить {{rub .AmountKop}} клиенту? Возврат выполняется через T-Bank и может занять время.');"
+                      style="display:inline">
+                    <button type="submit" class="btn btn-sm btn-danger">⟲ Вернуть</button>
+                </form>
+                {{else if eq .Status "refunded"}}
+                <span style="color:#6b7280">Возвращён</span>
+                {{else}}
+                <span style="color:#9ca3af">—</span>
+                {{end}}
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="11" style="text-align:center;color:#9ca3af;padding:2rem">Платежей пока нет</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

@@ -1,0 +1,154 @@
+{{define "content"}}
+<div style="margin-bottom:1.5rem">
+    <a href="/admin/users" style="color:#6b7280;text-decoration:none;font-size:0.9rem">← Все пользователи</a>
+    <h2 style="font-size:1.4rem;margin:0.5rem 0 0">
+        {{.Target.FullName}}
+        {{if .Target.Username}}<span style="color:#6b7280;font-weight:400"> @{{.Target.Username}}</span>{{end}}
+    </h2>
+    <div style="color:#6b7280;font-size:0.9rem;margin-top:0.25rem">
+        ID {{.Target.ID}} · Telegram ID {{.Target.TelegramID}} · телефон {{if .Target.Phone}}{{.Target.Phone}}{{else}}—{{end}} · в боте {{if .Target.BotDialogOpen}}есть диалог{{else}}нет диалога{{end}}
+    </div>
+</div>
+
+{{if .Error}}<div class="alert-error">{{.Error}}</div>{{end}}
+
+<div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-bottom:1.5rem">
+    {{if .Target.EntryFeePaid}}
+        <span class="status-badge status-active">Взнос оплачен</span>
+        <form method="POST" action="/admin/users/{{.Target.ID}}/entry-fee" style="display:inline" onsubmit="return confirm('Снять вступительный взнос? Бандл/вступление снова станут доступны для покупки.')">
+            <input type="hidden" name="paid" value="off">
+            <button type="submit" class="btn btn-danger btn-sm">Снять взнос</button>
+        </form>
+    {{else}}
+        <span class="status-badge">Взнос не оплачен</span>
+        <form method="POST" action="/admin/users/{{.Target.ID}}/entry-fee" style="display:inline">
+            <input type="hidden" name="paid" value="on">
+            <button type="submit" class="btn btn-secondary btn-sm">Отметить оплаченным</button>
+        </form>
+    {{end}}
+    {{if .ActiveSubUntil}}
+        <span class="status-badge status-active">Подписка активна до {{formatDatePtr .ActiveSubUntil}}</span>
+    {{else}}
+        <span class="status-badge">Подписки нет</span>
+    {{end}}
+</div>
+
+{{if .SurveyStatus}}
+<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem">
+    <h3 style="font-size:1.1rem;margin:0">Анкета</h3>
+    <span class="status-badge">{{.SurveyStatus}}</span>
+</div>
+{{if .SurveyQA}}
+<table style="margin-bottom:2rem">
+    <tbody>
+        {{range .SurveyQA}}
+        <tr>
+            <td style="width:38%;color:#6b7280;vertical-align:top">{{.Question}}</td>
+            <td style="white-space:pre-wrap">{{.Answer}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p style="color:#9ca3af;margin:0 0 2rem">Пользователь ещё не отвечал на вопросы.</p>
+{{end}}
+{{end}}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h3 style="font-size:1.1rem;margin:0">Подписки</h3>
+</div>
+
+<table style="margin-bottom:2rem">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Услуга</th>
+            <th>Статус</th>
+            <th>Начало</th>
+            <th>Окончание</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Subscriptions}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{.ServiceTitle}}</td>
+            <td><span class="status-badge status-{{.Status}}">{{.Status}}</span></td>
+            <td>{{formatDate .StartedAt}}</td>
+            <td>{{formatDate .ExpiresAt}}</td>
+            <td style="white-space:nowrap">
+                {{if eq (printf "%v" .Status) "active"}}
+                <form method="POST" action="/admin/users/{{$.Target.ID}}/subscriptions/{{.ID}}/extend" style="display:inline-block" onsubmit="return confirm('Продлить подписку?')">
+                    <select name="days" style="padding:0.25rem 0.6rem;font-size:0.82rem;border:1px solid var(--red-200);border-radius:6px;background:var(--red-50);color:var(--red-700);cursor:pointer;font-weight:500" onchange="if(this.value){this.form.submit()}">
+                        <option value="">+ продлить</option>
+                        <option value="1">+1 день</option>
+                        <option value="7">+7 дней</option>
+                        <option value="14">+14 дней</option>
+                        <option value="30">+30 дней</option>
+                        <option value="90">+90 дней</option>
+                        <option value="180">+180 дней</option>
+                        <option value="365">+1 год</option>
+                    </select>
+                </form>
+                {{end}}
+                <a href="/admin/users/{{$.Target.ID}}/subscriptions/{{.ID}}/edit" class="btn btn-secondary btn-sm">✎ Изменить</a>
+                <form method="POST" action="/admin/users/{{$.Target.ID}}/subscriptions/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить подписку «{{.ServiceTitle}}»?')">
+                    <button type="submit" class="btn btn-danger btn-sm">🗑 Удалить</button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:2rem">Подписок пока нет</td></tr>
+        {{end}}
+    </tbody>
+</table>
+
+<h3 style="font-size:1.1rem;margin-bottom:1rem">Добавить подписку вручную</h3>
+<form method="POST" action="/admin/users/{{.Target.ID}}/subscriptions" style="background:#fff;border-radius:8px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);max-width:480px">
+    <div class="form-group">
+        <label for="service_id">Услуга</label>
+        <select name="service_id" id="service_id" required>
+            <option value="">— выбрать —</option>
+            {{range .Services}}
+            <option value="{{.ID}}">{{.Title}} ({{rub .PriceKop}}{{if .DurationDays}}, {{.DurationDays}} дн.{{end}}){{if not .IsActive}} [неактивна]{{end}}</option>
+            {{end}}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="expires_at">Действует до</label>
+        <input type="date" name="expires_at" id="expires_at" required>
+    </div>
+    <button type="submit" class="btn">Добавить подписку</button>
+</form>
+
+<h3 style="font-size:1.1rem;margin:2rem 0 1rem">Последние оплаты</h3>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Сумма</th>
+            <th>Статус</th>
+            <th>Провайдер</th>
+            <th>Создан</th>
+            <th>Оплачен</th>
+            <th>Order</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Payments}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{rub .AmountKop}}</td>
+            <td><span class="status-badge status-{{.Status}}">{{.Status}}</span></td>
+            <td>{{.Provider}}</td>
+            <td>{{formatDate .CreatedAt}}</td>
+            <td>{{formatDatePtr .PaidAt}}</td>
+            <td>#{{.OrderID}}</td>
+        </tr>
+        {{else}}
+        <tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:2rem">Оплат пока нет</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

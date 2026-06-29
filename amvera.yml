@@ -1,0 +1,16 @@
+# Конфигурация деплоя для Amvera Cloud.
+# Сборка из Dockerfile, web слушает на 8080. Бот/напоминания/истечение/GetState
+# крутятся внутри web-процесса при переменной RUN_WORKER=1 (задаётся в кабинете Amvera,
+# в репозиторий секреты/окружение не коммитим).
+meta:
+  environment: docker
+  toolchain:
+    name: docker
+    version: latest
+
+build:
+  dockerfile: Dockerfile
+
+run:
+  # Порт, который слушает приложение внутри контейнера (HTTP_ADDR=:8080).
+  containerPort: 8080

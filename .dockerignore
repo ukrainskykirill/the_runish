@@ -1,0 +1,26 @@
+# Зависимости/сборка фронта — ставятся внутри образа
+web/frontend/node_modules
+web/frontend/dist
+
+# Секреты и локальное окружение
+.env
+.env.local
+.env.*.local
+
+# Git / IDE / OS
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Локальные данные БД
+pgdata/
+
+# Исходные мастер-видео (в образ не нужны; served-версия — в web/frontend/public)
+/lv_0_20260613003527_1.mp4
+/the_runnish_main_video.mp4
+
+# Документация деплоя (в образ не нужна)
+DEPLOY_AMVERA.md
+AGENTS.md

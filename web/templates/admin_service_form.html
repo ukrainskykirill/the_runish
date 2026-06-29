@@ -1,0 +1,82 @@
+{{define "content"}}
+<h2 style="font-size:1.4rem;margin-bottom:1.5rem">
+    {{if .Service}}Редактировать услугу{{else}}Новая услуга{{end}}
+</h2>
+
+{{if .Error}}
+<div class="alert-error">{{.Error}}</div>
+{{end}}
+
+<form method="POST" action="{{if .Service}}/admin/services/{{.Service.ID}}{{else}}/admin/services{{end}}" style="max-width:600px">
+    <div class="form-group">
+        <label>Тип услуги</label>
+        <select name="kind" id="kind" onchange="toggleDuration()">
+            <option value="subscription" {{if and .Service (eq (printf "%v" .Service.Kind) "subscription")}}selected{{end}}>Подписка</option>
+            <option value="entry" {{if and .Service (eq (printf "%v" .Service.Kind) "entry")}}selected{{end}}>Взнос (вступительный)</option>
+            <option value="bundle" {{if and .Service (eq (printf "%v" .Service.Kind) "bundle")}}selected{{end}}>Бандл (взнос + 1-й месяц)</option>
+            <option value="training" {{if and .Service (eq (printf "%v" .Service.Kind) "training")}}selected{{end}}>Тренировка (разовая)</option>
+            <option value="free" {{if and .Service (eq (printf "%v" .Service.Kind) "free")}}selected{{end}}>Бесплатная</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Название *</label>
+        <input type="text" name="title" required value="{{if .Service}}{{.Service.Title}}{{end}}" placeholder="Беговое комьюнити The Runish">
+    </div>
+
+    <div class="form-group">
+        <label>Описание</label>
+        <textarea name="description" placeholder="Подробное описание услуги...">{{if .Service}}{{.Service.Description}}{{end}}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Цена, ₽ *</label>
+        <input type="number" name="price_rub" min="0" step="0.01" required value="{{if .Service}}{{kop2rub .Service.PriceKop}}{{else}}0{{end}}" placeholder="8000">
+        <small style="color:#6b7280;margin-top:0.2rem;display:block">Например: 8000 или 800.50. 0 = бесплатно</small>
+    </div>
+
+    <div class="form-group">
+        <label>Цена при подписке, ₽</label>
+        <input type="number" name="price_with_sub_rub" min="0" step="0.01" value="{{if .Service}}{{kop2rubPtr .Service.PriceWithSubKop}}{{end}}" placeholder="напр. 2450">
+        <small style="color:#6b7280;margin-top:0.2rem;display:block">Скидочная цена для активных подписчиков. Пусто = без скидки.</small>
+    </div>
+
+    <div class="form-group">
+        <label>Льготная цена «первых 30», ₽</label>
+        <input type="number" name="promo_price_rub" min="0" step="0.01" value="{{if .Service}}{{kop2rubPtr .Service.PromoPriceKop}}{{end}}" placeholder="напр. 2500">
+        <small style="color:#6b7280;margin-top:0.2rem;display:block">Цена по акции «первых 30». Пусто = без акции.</small>
+    </div>
+
+    <div class="form-group" id="duration-group">
+        <label>Срок действия (дни)</label>
+        <input type="number" name="duration_days" min="1" value="{{if and .Service .Service.DurationDays}}{{.Service.DurationDays}}{{end}}" placeholder="30">
+        <small style="color:#6b7280;margin-top:0.2rem;display:block">Обязательно для подписки и бандла</small>
+    </div>
+
+    <div class="form-group">
+        <label>Порядок сортировки</label>
+        <input type="number" name="sort_order" value="{{if .Service}}{{.Service.SortOrder}}{{else}}0{{end}}">
+    </div>
+
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="is_active" {{if or (not .Service) .Service.IsActive}}checked{{end}} style="width:auto;margin-right:0.5rem">
+            Активна (видна на сайте)
+        </label>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
+        <button type="submit" class="btn">{{if .Service}}Сохранить{{else}}Создать{{end}}</button>
+        <a href="/admin/services" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+
+<script>
+function toggleDuration() {
+    var kind = document.getElementById('kind').value;
+    var group = document.getElementById('duration-group');
+    group.style.display = (kind === 'subscription' || kind === 'bundle') ? '' : 'none';
+}
+toggleDuration();
+</script>
+{{end}}

@@ -1,0 +1,38 @@
+{{define "content"}}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+    <h2 style="font-size:1.4rem">Новости ({{len .News}})</h2>
+    <a href="/admin/news/new" class="btn">+ Добавить новость</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Заголовок</th>
+            <th>Текст</th>
+            <th>Порядок</th>
+            <th>Активна</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .News}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{.Title}}</td>
+            <td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{.Content}}</td>
+            <td>{{.SortOrder}}</td>
+            <td>{{if .IsActive}}✅{{else}}❌{{end}}</td>
+            <td>
+                <a href="/admin/news/{{.ID}}/edit" class="btn btn-secondary btn-sm">✏️ Изменить</a>
+                <form method="POST" action="/admin/news/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить новость «{{.Title}}»?')">
+                    <button type="submit" class="btn btn-danger btn-sm">🗑 Удалить</button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:2rem">Новостей пока нет</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: therunish
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: ["/app/therunish-web"]
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/therunish?sslmode=disable
+      HTTP_ADDR: ":8080"
+      BASE_URL: ${BASE_URL}
+      SESSION_TTL: 720h
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-tbank}
+      TBANK_TERMINAL_KEY: ${TBANK_TERMINAL_KEY}
+      TBANK_PASSWORD: ${TBANK_PASSWORD}
+      TBANK_API_BASE: ${TBANK_API_BASE:-https://securepay.tinkoff.ru/v2}
+      BOT_TOKEN: ${BOT_TOKEN}
+      BOT_USERNAME: ${BOT_USERNAME}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: ["/app/therunish-worker"]
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/therunish?sslmode=disable
+      BASE_URL: ${BASE_URL}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-tbank}
+      TBANK_TERMINAL_KEY: ${TBANK_TERMINAL_KEY}
+      TBANK_PASSWORD: ${TBANK_PASSWORD}
+      TBANK_API_BASE: ${TBANK_API_BASE:-https://securepay.tinkoff.ru/v2}
+      BOT_TOKEN: ${BOT_TOKEN}
+      BOT_USERNAME: ${BOT_USERNAME}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Туннель контейнером (Cloudflare quick tunnel). Без аккаунта, без warning-страницы.
+  # URL (*.trycloudflare.com) авто-выдаётся и меняется при рестарте — берётся из логов.
+  # Запуск:  docker compose --profile tunnel up -d cloudflared
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: the_runish-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://web:8080
+    depends_on:
+      - web
+    profiles: ["tunnel"]
+
+volumes:
+  pgdata:

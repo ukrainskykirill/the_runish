@@ -1,0 +1,32 @@
+# Production compose для Timeweb Cloud VPS.
+# БД — облачная (Timeweb Managed PostgreSQL), на сервере только app-контейнеры.
+# Образ тянется из GHCR (не собирается локально).
+#
+# На сервере рядом с этим файлом должен лежать заполненный .env (см. .env.example),
+# в котором ОБЯЗАТЕЛЬНО заданы переменные:
+#   IMAGE_OWNER — ваш логин на GitHub (владелец репозитория/образа)
+#   IMAGE_TAG   — тег образа (обычно latest)
+
+services:
+  web:
+    image: ghcr.io/${IMAGE_OWNER}/therunish:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  worker:
+    image: ghcr.io/${IMAGE_OWNER}/therunish:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    command: ["/app/therunish-worker"]
+    env_file: .env
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

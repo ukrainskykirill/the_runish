@@ -1,0 +1,44 @@
+{{define "content"}}
+<h2 style="font-size:1.4rem;margin-bottom:1.5rem">
+    {{if .Merch}}Редактировать товар{{else}}Новый товар{{end}}
+</h2>
+
+{{if .Error}}
+<div class="alert-error">{{.Error}}</div>
+{{end}}
+
+<form method="POST" action="{{if .Merch}}/admin/merch/{{.Merch.ID}}{{else}}/admin/merch{{end}}" style="max-width:600px">
+    <div class="form-group">
+        <label>Название *</label>
+        <input type="text" name="title" required value="{{if .Merch}}{{.Merch.Title}}{{end}}" placeholder="Футболка The Runish">
+    </div>
+
+    <div class="form-group">
+        <label>Описание</label>
+        <textarea name="description" placeholder="Подробное описание товара...">{{if .Merch}}{{.Merch.Description}}{{end}}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Цена, ₽ *</label>
+        <input type="number" name="price_rub" min="0" step="0.01" required value="{{if .Merch}}{{kop2rub .Merch.PriceKop}}{{else}}0{{end}}" placeholder="8000">
+        <small style="color:#6b7280;margin-top:0.2rem;display:block">Например: 8000 или 800.50. 0 = бесплатно</small>
+    </div>
+
+    <div class="form-group">
+        <label>Порядок сортировки</label>
+        <input type="number" name="sort_order" value="{{if .Merch}}{{.Merch.SortOrder}}{{else}}0{{end}}">
+    </div>
+
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="is_active" {{if or (not .Merch) .Merch.IsActive}}checked{{end}} style="width:auto;margin-right:0.5rem">
+            Активен (виден на сайте)
+        </label>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
+        <button type="submit" class="btn">{{if .Merch}}Сохранить{{else}}Создать{{end}}</button>
+        <a href="/admin/merch" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+{{end}}

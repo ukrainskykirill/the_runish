@@ -1,0 +1,405 @@
+/* The Runish — базовые стили */
+
+:root {
+    --color-primary: #2563eb;
+    --color-primary-dark: #1d4ed8;
+    --color-bg: #f8fafc;
+    --color-text: #1e293b;
+    --color-muted: #64748b;
+    --color-border: #e2e8f0;
+    --color-success: #16a34a;
+    --color-danger: #dc2626;
+    --radius: 8px;
+    --container: 960px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header */
+.header {
+    background: #fff;
+    border-bottom: 1px solid var(--color-border);
+    padding: 16px 0;
+}
+
+.header__inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.nav {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.nav__link {
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.nav__link:hover {
+    color: var(--color-primary);
+}
+
+.nav__link--btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+}
+
+/* Main */
+.main {
+    min-height: calc(100vh - 140px);
+    padding: 40px 0;
+}
+
+/* Hero */
+.hero {
+    text-align: center;
+    padding: 60px 0;
+}
+
+.hero__title {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.hero__subtitle {
+    font-size: 1.25rem;
+    color: var(--color-muted);
+    margin-bottom: 32px;
+}
+
+/* Features */
+.features__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+    margin-top: 40px;
+}
+
+.feature-card {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 32px 24px;
+    text-align: center;
+    border: 1px solid var(--color-border);
+}
+
+.feature-card h3 {
+    margin-bottom: 8px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    padding: 10px 24px;
+    border-radius: var(--radius);
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.btn--primary {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.btn--primary:hover {
+    background: var(--color-primary-dark);
+}
+
+.btn--ghost {
+    background: transparent;
+    color: var(--color-muted);
+    border: 1px solid var(--color-border);
+}
+
+.btn--sm {
+    padding: 6px 16px;
+    font-size: 0.875rem;
+}
+
+/* Catalog */
+.catalog__title {
+    margin-bottom: 24px;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.service-card {
+    background: #fff;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.service-card__body {
+    padding: 24px;
+    flex: 1;
+}
+
+.service-card__kind {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    background: #e0e7ff;
+    color: var(--color-primary);
+}
+
+.service-card__kind--subscription {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.service-card__kind--training {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.service-card__kind--free {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.service-card__title {
+    margin-bottom: 8px;
+}
+
+.service-card__desc {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.service-card__duration {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+}
+
+.service-card__footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.service-card__price {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* News cards */
+.news-card {
+    background: #fff;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.news-card__body {
+    padding: 24px;
+    flex: 1;
+}
+
+.news-card__title {
+    margin-bottom: 8px;
+}
+
+.news-card__content {
+    color: var(--color-text);
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+}
+
+/* Cart */
+.cart__title {
+    margin-bottom: 24px;
+}
+
+.cart__items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cart-item {
+    background: #fff;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cart-item__title {
+    font-size: 1.1rem;
+}
+
+.cart-item__price {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.cart-item__subtotal {
+    font-weight: 700;
+    margin-right: 12px;
+}
+
+.cart__summary {
+    margin-top: 24px;
+    padding: 24px;
+    background: #fff;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+}
+
+.cart__total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.25rem;
+    margin-bottom: 16px;
+}
+
+/* Profile */
+.profile__title {
+    margin-bottom: 16px;
+}
+
+.profile__heading {
+    margin-top: 32px;
+    margin-bottom: 16px;
+    font-size: 1.25rem;
+}
+
+.subs-list,
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sub-item,
+.order-item {
+    background: #fff;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    color: var(--color-muted);
+    padding: 40px;
+}
+
+/* Legal pages */
+.legal {
+    max-width: 700px;
+}
+
+.legal h1 {
+    margin-bottom: 8px;
+}
+
+.legal__updated {
+    color: var(--color-muted);
+    margin-bottom: 24px;
+}
+
+.legal h2 {
+    margin-top: 24px;
+    margin-bottom: 8px;
+}
+
+.legal p,
+.legal li {
+    margin-bottom: 8px;
+    color: var(--color-text);
+}
+
+.legal ul {
+    padding-left: 24px;
+}
+
+/* Payment result */
+.payment-result {
+    text-align: center;
+    padding: 60px 0;
+}
+
+.payment-result__icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+
+/* Footer */
+.footer {
+    border-top: 1px solid var(--color-border);
+    padding: 24px 0;
+    background: #fff;
+}
+
+.footer__inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer__col a {
+    color: var(--color-muted);
+    text-decoration: none;
+    margin-left: 16px;
+}
+
+.footer__col a:hover {
+    color: var(--color-primary);
+}

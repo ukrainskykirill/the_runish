@@ -1,0 +1,46 @@
+{{define "content"}}
+<div style="margin-bottom:1.5rem">
+    <a href="/admin/users/{{.Target.ID}}" style="color:#6b7280;text-decoration:none;font-size:0.9rem">← Назад к пользователю</a>
+    <h2 style="font-size:1.4rem;margin:0.5rem 0 0">Изменить подписку #{{.Sub.ID}}</h2>
+    <div style="color:#6b7280;font-size:0.9rem;margin-top:0.25rem">
+        Пользователь: {{.Target.FullName}}{{if .Target.Username}} @{{.Target.Username}}{{end}}
+    </div>
+</div>
+
+{{if .Error}}
+<div class="alert-error">{{.Error}}</div>
+{{end}}
+
+<form method="POST" action="/admin/users/{{.Target.ID}}/subscriptions/{{.Sub.ID}}" style="max-width:480px">
+    <div class="form-group">
+        <label for="service_id">Услуга</label>
+        <select name="service_id" id="service_id" required>
+            <option value="">— выбрать —</option>
+            {{range .Services}}
+            <option value="{{.ID}}" {{if eq $.Sub.ServiceID .ID}}selected{{end}}>
+                {{.Title}} ({{rub .PriceKop}}{{if .DurationDays}}, {{.DurationDays}} дн.{{end}}){{if not .IsActive}} [неактивна]{{end}}
+            </option>
+            {{end}}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="expires_at">Действует до</label>
+        <input type="date" name="expires_at" id="expires_at" required value="{{formatDate .Sub.ExpiresAt}}">
+    </div>
+
+    <div class="form-group">
+        <label for="status">Статус</label>
+        <select name="status" id="status">
+            <option value="active" {{if eq (printf "%v" .Sub.Status) "active"}}selected{{end}}>active — активна</option>
+            <option value="expired" {{if eq (printf "%v" .Sub.Status) "expired"}}selected{{end}}>expired — истекла</option>
+            <option value="cancelled" {{if eq (printf "%v" .Sub.Status) "cancelled"}}selected{{end}}>cancelled — отменена</option>
+        </select>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
+        <button type="submit" class="btn">Сохранить</button>
+        <a href="/admin/users/{{.Target.ID}}" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+{{end}}

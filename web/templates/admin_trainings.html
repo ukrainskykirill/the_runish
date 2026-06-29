@@ -1,0 +1,42 @@
+{{define "content"}}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+    <h2 style="font-size:1.4rem">Расписание тренировок ({{len .Trainings}})</h2>
+    <a href="/admin/trainings/new" class="btn">+ Добавить тренировку</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>День</th>
+            <th>Время</th>
+            <th>Название</th>
+            <th>Место</th>
+            <th>Порядок</th>
+            <th>Активна</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Trainings}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{weekday .Weekday}}</td>
+            <td>{{.StartTime}}</td>
+            <td>{{.Title}}</td>
+            <td>{{.Place}}</td>
+            <td>{{.SortOrder}}</td>
+            <td>{{if .IsActive}}✅{{else}}❌{{end}}</td>
+            <td style="white-space:nowrap">
+                <a href="/admin/trainings/{{.ID}}/edit" class="btn btn-secondary btn-sm">✏️ Изменить</a>
+                <form method="POST" action="/admin/trainings/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить тренировку «{{.Title}}»?')">
+                    <button type="submit" class="btn btn-danger btn-sm">🗑 Удалить</button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:2rem">Тренировок пока нет</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//private/tmp/**)",
+      "Bash(rm -rf design_extract)",
+      "Bash(mkdir design_extract)",
+      "Bash(tar -xf design.json -C design_extract)",
+      "Read(//tmp/design_extract/the-runish-design-system/project/tokens/**)",
+      "Read(//private/tmp/design_extract/the-runish-design-system/project/tokens/**)",
+      "Bash(npm install *)",
+      "Read(//tmp/design_extract/the-runish-design-system/project/mockups/**)",
+      "Read(//private/tmp/design_extract/the-runish-design-system/project/mockups/**)"
+    ]
+  }
+}

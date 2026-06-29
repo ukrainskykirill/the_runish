@@ -1,0 +1,38 @@
+{{define "content"}}
+<h2 style="font-size:1.4rem;margin-bottom:1.5rem">
+    {{if .News}}Редактировать новость{{else}}Новая новость{{end}}
+</h2>
+
+{{if .Error}}
+<div class="alert-error">{{.Error}}</div>
+{{end}}
+
+<form method="POST" action="{{if .News}}/admin/news/{{.News.ID}}{{else}}/admin/news{{end}}" style="max-width:600px">
+    <div class="form-group">
+        <label>Заголовок *</label>
+        <input type="text" name="title" required value="{{if .News}}{{.News.Title}}{{end}}" placeholder="Заголовок новости">
+    </div>
+
+    <div class="form-group">
+        <label>Текст новости *</label>
+        <textarea name="content" required placeholder="Текст новости...">{{if .News}}{{.News.Content}}{{end}}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Порядок сортировки</label>
+        <input type="number" name="sort_order" value="{{if .News}}{{.News.SortOrder}}{{else}}0{{end}}">
+    </div>
+
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="is_active" {{if or (not .News) .News.IsActive}}checked{{end}} style="width:auto;margin-right:0.5rem">
+            Активна (видна на сайте)
+        </label>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
+        <button type="submit" class="btn">{{if .News}}Сохранить{{else}}Создать{{end}}</button>
+        <a href="/admin/news" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+{{end}}

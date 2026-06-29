@@ -1,0 +1,40 @@
+{{define "content"}}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+    <h2 style="font-size:1.4rem">Мерч ({{len .Merch}})</h2>
+    <a href="/admin/merch/new" class="btn">+ Добавить товар</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Описание</th>
+            <th>Цена</th>
+            <th>Порядок</th>
+            <th>Активен</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Merch}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td>{{.Title}}</td>
+            <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{.Description}}</td>
+            <td>{{rub .PriceKop}}</td>
+            <td>{{.SortOrder}}</td>
+            <td>{{if .IsActive}}✅{{else}}❌{{end}}</td>
+            <td>
+                <a href="/admin/merch/{{.ID}}/edit" class="btn btn-secondary btn-sm">✏️ Изменить</a>
+                <form method="POST" action="/admin/merch/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить товар «{{.Title}}»?')">
+                    <button type="submit" class="btn btn-danger btn-sm">🗑 Удалить</button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:2rem">Мерча пока нет</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

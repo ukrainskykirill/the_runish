@@ -11,7 +11,6 @@ import (
 	"therunish/internal/auth"
 )
 
-// AdminLoginPage — форма входа (GET /admin/login).
 func (a *App) AdminLoginPage(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		PageData
@@ -22,7 +21,6 @@ func (a *App) AdminLoginPage(w http.ResponseWriter, r *http.Request) {
 	_ = a.renderer.Render(w, "admin_login", data)
 }
 
-// AdminLoginSubmit — проверка логина/пароля (POST /admin/login).
 func (a *App) AdminLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -32,7 +30,6 @@ func (a *App) AdminLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	login := r.FormValue("login")
 	password := r.FormValue("password")
 
-	// Constant-time comparison.
 	loginOK := subtle.ConstantTimeCompare([]byte(login), []byte(a.cfg.AdminLogin)) == 1
 	passOK := subtle.ConstantTimeCompare([]byte(password), []byte(a.cfg.AdminPassword)) == 1
 
@@ -49,7 +46,6 @@ func (a *App) AdminLoginSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Создаём админ-сессию.
 	token, err := generateAdminToken()
 	if err != nil {
 		a.logger.Error("generate admin token", "err", err)
@@ -77,7 +73,6 @@ func (a *App) AdminLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/services", http.StatusSeeOther)
 }
 
-// AdminLogout — выход (POST /admin/logout).
 func (a *App) AdminLogout(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(auth.AdminCookieName)
 	if err == nil && c.Value != "" {

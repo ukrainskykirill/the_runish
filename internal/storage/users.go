@@ -10,7 +10,6 @@ import (
 	"therunish/internal/domain"
 )
 
-// userCols — общий список колонок юзера (порядок совпадает со scanUser).
 const userCols = `id, telegram_id, username, full_name, phone, bot_dialog_open, is_admin, entry_fee_paid, created_at`
 
 func scanUser(sc rowScanner, u *domain.User) error {
@@ -20,13 +19,6 @@ func scanUser(sc rowScanner, u *domain.User) error {
 	)
 }
 
-// UpsertUser создаёт или обновляет юзера по telegram_id и возвращает актуального юзера.
-// Используется при логине через Telegram (Login Widget и deep-link).
-//
-// Побочный эффект: при первой регистрации (строка именно вставлена) в той же транзакции
-// заводится pending-запись онбординг-анкеты. Признак вставки берётся из служебного xmax
-// (у только что вставленной версии строки он равен 0), поэтому существующим юзерам анкета
-// не создаётся — она достаётся только новым.
 func (s *Store) UpsertUser(ctx context.Context, u *domain.User) (domain.User, error) {
 	const q = `
 		WITH up AS (
@@ -52,7 +44,6 @@ func (s *Store) UpsertUser(ctx context.Context, u *domain.User) (domain.User, er
 	return result, nil
 }
 
-// GetUserByID возвращает юзера по ID.
 func (s *Store) GetUserByID(ctx context.Context, id int64) (domain.User, error) {
 	q := `SELECT ` + userCols + ` FROM users WHERE id = $1`
 	var u domain.User
@@ -66,7 +57,6 @@ func (s *Store) GetUserByID(ctx context.Context, id int64) (domain.User, error) 
 	return u, nil
 }
 
-// GetUserByTelegramID возвращает юзера по telegram_id.
 func (s *Store) GetUserByTelegramID(ctx context.Context, tgID int64) (domain.User, error) {
 	q := `SELECT ` + userCols + ` FROM users WHERE telegram_id = $1`
 	var u domain.User
@@ -80,7 +70,6 @@ func (s *Store) GetUserByTelegramID(ctx context.Context, tgID int64) (domain.Use
 	return u, nil
 }
 
-// SetEntryFeePaid выставляет флаг вступительного взноса (ручное управление из админки).
 func (s *Store) SetEntryFeePaid(ctx context.Context, userID int64, paid bool) error {
 	const q = `UPDATE users SET entry_fee_paid = $2 WHERE id = $1`
 	if _, err := s.db.ExecContext(ctx, q, userID, paid); err != nil {
@@ -89,7 +78,6 @@ func (s *Store) SetEntryFeePaid(ctx context.Context, userID int64, paid bool) er
 	return nil
 }
 
-// CountEntryFeePaid — число юзеров, оплативших взнос (для льготы «первых 30»).
 func (s *Store) CountEntryFeePaid(ctx context.Context) (int, error) {
 	var n int
 	if err := s.db.QueryRowContext(ctx, `SELECT count(*) FROM users WHERE entry_fee_paid`).Scan(&n); err != nil {
@@ -98,16 +86,30 @@ func (s *Store) CountEntryFeePaid(ctx context.Context) (int, error) {
 	return n, nil
 }
 
-// UserListItem — юзер + краткая информация о его ближайшей активной подписке (для админки).
+func (s *Store) CountEntryFeeReserved(ctx context.Context) (int, error) {
+	const q = `
+		SELECT count(*) FROM (
+			SELECT id AS uid FROM users WHERE entry_fee_paid
+			UNION
+			SELECT p.user_id AS uid
+			FROM payments p
+			JOIN order_items oi ON oi.order_id = p.order_id
+			JOIN services s ON s.id = oi.service_id
+			WHERE p.status IN ('new', 'pending') AND s.kind IN ('entry', 'bundle')
+		) t`
+	var n int
+	if err := s.db.QueryRowContext(ctx, q).Scan(&n); err != nil {
+		return 0, fmt.Errorf("count entry_fee_reserved: %w", err)
+	}
+	return n, nil
+}
+
 type UserListItem struct {
 	domain.User
 	SubscriptionTitle     string
 	SubscriptionExpiresAt *time.Time
 }
 
-// ListUsers — список юзеров для админки. С непустым search фильтрует
-// по username/full_name (ILIKE) или telegram_id (точное совпадение).
-// Для каждого юзера дополнительно отдаёт его ближайшую по сроку активную подписку (если есть).
 func (s *Store) ListUsers(ctx context.Context, search string) ([]UserListItem, error) {
 	const q = `
 		SELECT u.id, u.telegram_id, u.username, u.full_name, u.phone, u.bot_dialog_open, u.is_admin, u.entry_fee_paid, u.created_at,
@@ -153,8 +155,6 @@ func (s *Store) ListUsers(ctx context.Context, search string) ([]UserListItem, e
 	return users, rows.Err()
 }
 
-// ListNotificationUsers возвращает пользователей, которым можно писать в Telegram.
-// audience: "all" — все открывшие диалог с ботом; "active" — только с активной подпиской.
 func (s *Store) ListNotificationUsers(ctx context.Context, audience string) ([]domain.User, error) {
 	q := `SELECT ` + userCols + ` FROM users u WHERE u.bot_dialog_open = true`
 	if audience == "active" {
@@ -182,7 +182,6 @@ func (s *Store) ListNotificationUsers(ctx context.Context, audience string) ([]d
 	return users, rows.Err()
 }
 
-// GetNotificationUser возвращает конкретного пользователя, если бот может ему писать.
 func (s *Store) GetNotificationUser(ctx context.Context, userID int64) (domain.User, error) {
 	q := `SELECT ` + userCols + ` FROM users WHERE id = $1 AND bot_dialog_open = true`
 	var u domain.User
@@ -196,7 +195,6 @@ func (s *Store) GetNotificationUser(ctx context.Context, userID int64) (domain.U
 	return u, nil
 }
 
-// SetUserPhone сохраняет нормализованный телефон юзера.
 func (s *Store) SetUserPhone(ctx context.Context, userID int64, phone string) error {
 	const q = `UPDATE users SET phone = $2 WHERE id = $1`
 	if _, err := s.db.ExecContext(ctx, q, userID, phone); err != nil {
@@ -205,7 +203,6 @@ func (s *Store) SetUserPhone(ctx context.Context, userID int64, phone string) er
 	return nil
 }
 
-// SetBotDialogOpen выставляет флаг, что юзер нажал /start у бота.
 func (s *Store) SetBotDialogOpen(ctx context.Context, userID int64, open bool) error {
 	const q = `UPDATE users SET bot_dialog_open = $1 WHERE id = $2`
 	_, err := s.db.ExecContext(ctx, q, open, userID)

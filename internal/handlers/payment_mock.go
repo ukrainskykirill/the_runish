@@ -9,7 +9,6 @@ import (
 	"therunish/internal/storage"
 )
 
-// paymentMockTmpl — простая страница-эмулятор платёжной формы для PAYMENT_PROVIDER=mock.
 var paymentMockTmpl = template.Must(template.New("payment_mock").Parse(`<!doctype html>
 <html lang="ru">
 <head>
@@ -42,7 +41,6 @@ var paymentMockTmpl = template.Must(template.New("payment_mock").Parse(`<!doctyp
 </body>
 </html>`))
 
-// PaymentMockPage — GET /payment/mock/{orderID}. Эмулятор страницы платёжного провайдера.
 func (a *App) PaymentMockPage(w http.ResponseWriter, r *http.Request) {
 	orderID := r.PathValue("orderID")
 
@@ -67,8 +65,6 @@ func (a *App) PaymentMockPage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PaymentMockConfirm — POST /payment/mock/{orderID}. Подтверждает или отменяет тестовую оплату
-// и редиректит на success/fail, как настоящий провайдер.
 func (a *App) PaymentMockConfirm(w http.ResponseWriter, r *http.Request) {
 	orderID := r.PathValue("orderID")
 

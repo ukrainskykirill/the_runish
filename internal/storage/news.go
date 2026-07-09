@@ -9,7 +9,6 @@ import (
 	"therunish/internal/domain"
 )
 
-// CreateNews вставляет новую новость и возвращает её ID.
 func (s *Store) CreateNews(ctx context.Context, n *domain.News) (int64, error) {
 	const q = `
 		INSERT INTO news (title, content, sort_order, is_active, published_at)
@@ -25,7 +24,6 @@ func (s *Store) CreateNews(ctx context.Context, n *domain.News) (int64, error) {
 	return id, nil
 }
 
-// UpdateNews обновляет новость по ID.
 func (s *Store) UpdateNews(ctx context.Context, n *domain.News) error {
 	const q = `
 		UPDATE news
@@ -44,7 +42,6 @@ func (s *Store) UpdateNews(ctx context.Context, n *domain.News) error {
 	return nil
 }
 
-// DeactivateNews — мягкое удаление (is_active = false).
 func (s *Store) DeactivateNews(ctx context.Context, id int64) error {
 	const q = `UPDATE news SET is_active = false, updated_at = now() WHERE id = $1`
 	res, err := s.db.ExecContext(ctx, q, id)
@@ -58,7 +55,6 @@ func (s *Store) DeactivateNews(ctx context.Context, id int64) error {
 	return nil
 }
 
-// GetNews возвращает новость по ID (включая неактивные).
 func (s *Store) GetNews(ctx context.Context, id int64) (domain.News, error) {
 	const q = `
 		SELECT id, title, content, sort_order, is_active, published_at, created_at, updated_at
@@ -82,7 +78,6 @@ func (s *Store) GetNews(ctx context.Context, id int64) (domain.News, error) {
 	return n, nil
 }
 
-// ListNews возвращает новости. Если includeInactive=false — только активные.
 func (s *Store) ListNews(ctx context.Context, includeInactive bool) ([]domain.News, error) {
 	q := `
 		SELECT id, title, content, sort_order, is_active, published_at, created_at, updated_at

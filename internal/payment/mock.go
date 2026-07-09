@@ -5,10 +5,8 @@ import (
 	"fmt"
 )
 
-// MockProvider — заглушка для локальной разработки и тестов.
-// Init сразу возвращает фейковый URL на внутреннюю страницу-эмулятор.
 type MockProvider struct {
-	BaseURL string // например http://localhost:8080/payment/mock
+	BaseURL string
 }
 
 func NewMock(baseURL string) *MockProvider {

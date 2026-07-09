@@ -9,20 +9,22 @@ import (
 
 	"therunish/internal/botworker"
 	"therunish/internal/config"
+	"therunish/internal/observability"
 	"therunish/internal/payment"
 	"therunish/internal/storage"
 	"therunish/internal/telegram"
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	cfg, err := config.Load()
 	if err != nil {
-		logger.Error("config load", "err", err)
+		slog.New(slog.NewJSONHandler(os.Stdout, nil)).Error("config load", "err", err)
 		os.Exit(1)
 	}
+
+	logger, flush := observability.Setup(cfg)
+	defer flush()
+	slog.SetDefault(logger)
 
 	store, err := storage.New(context.Background(), cfg.DatabaseURL, logger)
 	if err != nil {

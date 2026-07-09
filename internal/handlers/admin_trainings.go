@@ -10,10 +10,8 @@ import (
 	"therunish/internal/storage"
 )
 
-// timeHHMM — формат времени из <input type="time">.
 var timeHHMM = regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
 
-// AdminListTrainingsPage — список тренировок (GET /admin/trainings).
 func (a *App) AdminListTrainingsPage(w http.ResponseWriter, r *http.Request) {
 	trainings, err := a.store.ListTrainings(r.Context(), true)
 	if err != nil {
@@ -35,7 +33,6 @@ func (a *App) AdminListTrainingsPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// AdminCreateTrainingPage — форма создания (GET /admin/trainings/new).
 func (a *App) AdminCreateTrainingPage(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		PageData
@@ -50,7 +47,6 @@ func (a *App) AdminCreateTrainingPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// AdminEditTrainingPage — форма редактирования (GET /admin/trainings/{id}/edit).
 func (a *App) AdminEditTrainingPage(w http.ResponseWriter, r *http.Request) {
 	id, err := parseID(r)
 	if err != nil {
@@ -83,7 +79,6 @@ func (a *App) AdminEditTrainingPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// AdminCreateTrainingSubmit — создать тренировку (POST /admin/trainings).
 func (a *App) AdminCreateTrainingSubmit(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -104,7 +99,6 @@ func (a *App) AdminCreateTrainingSubmit(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, "/admin/trainings", http.StatusSeeOther)
 }
 
-// AdminUpdateTrainingSubmit — обновить тренировку (POST /admin/trainings/{id}).
 func (a *App) AdminUpdateTrainingSubmit(w http.ResponseWriter, r *http.Request) {
 	id, err := parseID(r)
 	if err != nil {
@@ -133,7 +127,6 @@ func (a *App) AdminUpdateTrainingSubmit(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, "/admin/trainings", http.StatusSeeOther)
 }
 
-// AdminDeleteTrainingSubmit — удалить тренировку (POST /admin/trainings/{id}/delete).
 func (a *App) AdminDeleteTrainingSubmit(w http.ResponseWriter, r *http.Request) {
 	id, err := parseID(r)
 	if err != nil {
@@ -163,7 +156,6 @@ func (a *App) renderTrainingFormError(w http.ResponseWriter, t *domain.Training,
 	_ = a.renderer.Render(w, "admin_training_form", data)
 }
 
-// parseTrainingForm — извлекает Training из form-данных.
 func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 	title := r.FormValue("title")
 	place := r.FormValue("place")
@@ -185,6 +177,15 @@ func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 		return nil, "Укажите время в формате ЧЧ:ММ"
 	}
 
+	var capacity *int
+	if cs := r.FormValue("capacity"); cs != "" {
+		c, err := strconv.Atoi(cs)
+		if err != nil || c <= 0 {
+			return nil, "Лимит мест должен быть положительным числом"
+		}
+		capacity = &c
+	}
+
 	return &domain.Training{
 		Title:     title,
 		Weekday:   weekday,
@@ -192,5 +193,6 @@ func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 		Place:     place,
 		IsActive:  isActive,
 		SortOrder: sortOrder,
+		Capacity:  capacity,
 	}, ""
 }

@@ -4,11 +4,10 @@ import (
 	"io"
 	"net/http"
 
+	"therunish/internal/observability"
 	"therunish/internal/payment"
 )
 
-// PaymentWebhook — приём Notification от T-Bank.
-// Без авторизации — валидация по Token.
 func (a *App) PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -18,7 +17,6 @@ func (a *App) PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// Парсим и валидируем подпись по всем полям уведомления.
 	notif, ok, err := payment.ValidateNotification(body, a.cfg.TBankPassword)
 	if err != nil {
 		a.logger.Error("validate notification", "err", err)
@@ -41,27 +39,24 @@ func (a *App) PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	switch mapped {
 	case "confirmed":
 		if err := a.store.ActivateSubscriptionTx(r.Context(), notif.OrderID, notif.PaymentID.String(), notif.Status); err != nil {
-			a.logger.Error("activate subscription", "err", err, "order_id", notif.OrderID)
+			observability.Alert(r.Context(), a.logger, "Оплата: не удалось активировать подписку по вебхуку", err, "order_id", notif.OrderID)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	case "rejected":
 		if err := a.store.RejectPaymentTx(r.Context(), notif.OrderID, notif.PaymentID.String(), notif.Status, notif.ErrorCode); err != nil {
-			a.logger.Error("reject payment", "err", err, "order_id", notif.OrderID)
+			observability.Alert(r.Context(), a.logger, "Оплата: не удалось обработать отклонённый платёж", err, "order_id", notif.OrderID)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	case "refunded":
-		// REFUNDED (полный) → отмена платежа/заказа/подписок.
-		// PARTIAL_REFUNDED (частичный) → только фиксируем tbank_status.
-		if err := a.store.RefundPaymentTx(r.Context(), notif.OrderID, notif.PaymentID.String(), notif.Status); err != nil {
-			a.logger.Error("refund payment", "err", err, "order_id", notif.OrderID)
+		if err := a.store.RefundPaymentTx(r.Context(), notif.OrderID, notif.PaymentID.String(), notif.Status, notif.Amount); err != nil {
+			observability.Alert(r.Context(), a.logger, "Оплата: не удалось обработать возврат", err, "order_id", notif.OrderID)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
 
-	// T-Bank требует ровно HTTP 200 с телом "OK".
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
 }

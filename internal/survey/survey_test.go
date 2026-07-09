@@ -3,45 +3,66 @@ package survey
 import (
 	"reflect"
 	"testing"
+
+	"therunish/internal/domain"
 )
 
-func TestBranchFor(t *testing.T) {
-	cases := map[int]string{
-		0: BranchNovice,
-		1: BranchCasual,
-		2: BranchCasual,
-		3: BranchRegular,
-		4: BranchRegular,
+func testTemplate() *Template {
+	return Build([]domain.SurveyQuestion{
+		{Key: "name", Phase: domain.SurveyPhaseIntro, Kind: domain.SurveyKindText, Label: "Имя", Prompt: "Как тебя зовут?", Position: 0},
+		{Key: "experience", Phase: domain.SurveyPhaseIntro, Kind: domain.SurveyKindSingle, Label: "Беговой опыт", Prompt: "Какой опыт?", Position: 1, IsSelector: true, Options: []domain.SurveyOption{
+			{Label: "Не бегал", Branch: BranchNovice},
+			{Label: "Иногда", Branch: BranchCasual},
+			{Label: "Регулярно", Branch: BranchRegular},
+		}},
+		{Key: "motivation", Phase: domain.SurveyPhaseBranch, Branch: BranchNovice, Kind: domain.SurveyKindSingle, Label: "Мотивация", Prompt: "Почему?", Position: 0, Options: []domain.SurveyOption{{Label: "Двигаться"}}},
+		{Key: "distance", Phase: domain.SurveyPhaseBranch, Branch: BranchCasual, Kind: domain.SurveyKindSingle, Label: "Дистанция", Prompt: "Какая?", Position: 0, Options: []domain.SurveyOption{{Label: "5 км"}}},
+		{Key: "volume", Phase: domain.SurveyPhaseBranch, Branch: BranchRegular, Kind: domain.SurveyKindSingle, Label: "Объём", Prompt: "Сколько?", Position: 0, Options: []domain.SurveyOption{{Label: "40+ км"}}},
+		{Key: "distances", Phase: domain.SurveyPhaseBranch, Branch: BranchRegular, Kind: domain.SurveyKindMulti, Label: "Интересные дистанции", Prompt: "Что интересно?", Position: 1, Options: []domain.SurveyOption{{Label: "5 км"}, {Label: "10 км"}}},
+		{Key: "notes", Phase: domain.SurveyPhaseOutro, Kind: domain.SurveyKindText, Label: "Заметки", Prompt: "Ещё что-то?", Position: 0},
+	})
+}
+
+func TestBranchForOption(t *testing.T) {
+	tmpl := testTemplate()
+	st, ok := tmpl.Get("experience")
+	if !ok || !st.IsSelector {
+		t.Fatal("experience must be a selector step")
 	}
+	cases := map[int]string{0: BranchNovice, 1: BranchCasual, 2: BranchRegular}
 	for idx, want := range cases {
-		if got := BranchFor(idx); got != want {
-			t.Errorf("BranchFor(%d) = %q, want %q", idx, got, want)
+		if got := BranchForOption(st, idx); got != want {
+			t.Errorf("BranchForOption(%d) = %q, want %q", idx, got, want)
 		}
+	}
+	if got := BranchForOption(st, 99); got != "" {
+		t.Errorf("BranchForOption(out of range) = %q, want empty", got)
 	}
 }
 
 func TestSequence(t *testing.T) {
+	tmpl := testTemplate()
 	cases := map[string][]string{
-		BranchNovice:  {"name", "experience", "motivation", "health", "comfort_start", "freq", "format", "time", "important", "notes"},
-		BranchCasual:  {"name", "experience", "last_run", "distance", "pace", "goal", "format", "time", "important", "notes"},
-		BranchRegular: {"name", "experience", "freq_reg", "volume", "distances", "goals", "races", "format", "time", "important", "notes"},
-		// до выбора ветки — только префикс+хвост
-		"": {"name", "experience", "format", "time", "important", "notes"},
+		BranchNovice:  {"name", "experience", "motivation", "notes"},
+		BranchCasual:  {"name", "experience", "distance", "notes"},
+		BranchRegular: {"name", "experience", "volume", "distances", "notes"},
+		"":            {"name", "experience", "notes"},
 	}
 	for branch, want := range cases {
-		if got := Sequence(branch); !reflect.DeepEqual(got, want) {
+		if got := tmpl.Sequence(branch); !reflect.DeepEqual(got, want) {
 			t.Errorf("Sequence(%q) = %v, want %v", branch, got, want)
 		}
 	}
 }
 
 func TestNextWalksWholeBranch(t *testing.T) {
+	tmpl := testTemplate()
 	for _, branch := range []string{BranchNovice, BranchCasual, BranchRegular} {
-		seq := Sequence(branch)
-		cur := FirstStep()
+		seq := tmpl.Sequence(branch)
+		cur := tmpl.FirstStep()
 		walked := []string{cur}
 		for {
-			next, done := Next(branch, cur)
+			next, done := tmpl.Next(branch, cur)
 			if done {
 				break
 			}
@@ -51,40 +72,23 @@ func TestNextWalksWholeBranch(t *testing.T) {
 		if !reflect.DeepEqual(walked, seq) {
 			t.Errorf("branch %q walk = %v, want %v", branch, walked, seq)
 		}
-		// последний шаг должен давать done
-		if _, done := Next(branch, seq[len(seq)-1]); !done {
+		if _, done := tmpl.Next(branch, seq[len(seq)-1]); !done {
 			t.Errorf("branch %q: Next on last step should be done", branch)
 		}
 	}
 }
 
-func TestEveryStepHasDefinition(t *testing.T) {
-	for _, branch := range []string{BranchNovice, BranchCasual, BranchRegular} {
-		for _, key := range Sequence(branch) {
-			st, ok := Get(key)
-			if !ok {
-				t.Fatalf("no definition for step %q", key)
-			}
-			if st.Text == "" || st.Label == "" {
-				t.Errorf("step %q missing text/label", key)
-			}
-			if (st.Kind == Single || st.Kind == Multi) && len(st.Options) == 0 {
-				t.Errorf("step %q is choice but has no options", key)
-			}
-		}
-	}
-}
-
 func TestRenderAnswers(t *testing.T) {
+	tmpl := testTemplate()
 	answers := map[string]any{
 		"name":       "Кирилл",
-		"experience": "Бегаю регулярно",
+		"experience": "Регулярно",
 		"distances":  []any{"5 км", "10 км"},
 	}
-	got := RenderAnswers(BranchRegular, answers)
+	got := tmpl.RenderAnswers(BranchRegular, answers)
 	want := []QA{
 		{Question: "Имя", Answer: "Кирилл"},
-		{Question: "Беговой опыт", Answer: "Бегаю регулярно"},
+		{Question: "Беговой опыт", Answer: "Регулярно"},
 		{Question: "Интересные дистанции", Answer: "5 км, 10 км"},
 	}
 	if !reflect.DeepEqual(got, want) {

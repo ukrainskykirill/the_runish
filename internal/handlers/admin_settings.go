@@ -11,7 +11,13 @@ import (
 	"therunish/internal/telegram"
 )
 
-// AdminSettingsPage — настройки клуба (GET /admin/settings).
+type templateView struct {
+	Key          string
+	Label        string
+	Placeholders string
+	Value        string
+}
+
 func (a *App) AdminSettingsPage(w http.ResponseWriter, r *http.Request) {
 	enabled, err := a.store.First30PromoEnabled(r.Context())
 	if err != nil {
@@ -25,10 +31,25 @@ func (a *App) AdminSettingsPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	reminderDays, err := a.store.SubscriptionReminderDays(r.Context())
+	subHours, err := a.store.SubscriptionReminderHours(r.Context())
 	if err != nil {
-		a.logger.Error("settings: reminder days", "err", err)
-		reminderDays = []int{7, 3, 1}
+		a.logger.Error("settings: reminder hours", "err", err)
+		subHours = []int{168, 72, 24}
+	}
+	trainingHours, err := a.store.TrainingReminderHours(r.Context())
+	if err != nil {
+		trainingHours = 24
+	}
+	quietFrom, quietTo := a.store.QuietWindow(r.Context())
+
+	var templates []templateView
+	for _, t := range storage.MessageTemplates() {
+		templates = append(templates, templateView{
+			Key:          t.Key,
+			Label:        t.Label,
+			Placeholders: t.Placeholders,
+			Value:        a.store.MessageTemplate(r.Context(), t.Key),
+		})
 	}
 
 	data := struct {
@@ -36,20 +57,27 @@ func (a *App) AdminSettingsPage(w http.ResponseWriter, r *http.Request) {
 		PromoEnabled     bool
 		PaidCount        int
 		PromoActive      bool
-		ReminderDays     string
+		SubReminderHours string
+		TrainingHours    int
+		QuietFrom        int
+		QuietTo          int
+		Templates        []templateView
 		Saved            bool
 		NotifySent       string
 		NotifyFailed     string
-		NotificationText string
 	}{
-		PageData:     PageData{BotUsername: a.cfg.BotUsername},
-		PromoEnabled: enabled,
-		PaidCount:    count,
-		PromoActive:  enabled && count < 30,
-		ReminderDays: storage.FormatReminderDays(reminderDays),
-		Saved:        r.URL.Query().Get("saved") == "1",
-		NotifySent:   r.URL.Query().Get("notify_sent"),
-		NotifyFailed: r.URL.Query().Get("notify_failed"),
+		PageData:         PageData{BotUsername: a.cfg.BotUsername},
+		PromoEnabled:     enabled,
+		PaidCount:        count,
+		PromoActive:      enabled && count < 30,
+		SubReminderHours: storage.FormatReminderDays(subHours),
+		TrainingHours:    trainingHours,
+		QuietFrom:        quietFrom,
+		QuietTo:          quietTo,
+		Templates:        templates,
+		Saved:            r.URL.Query().Get("saved") == "1",
+		NotifySent:       r.URL.Query().Get("notify_sent"),
+		NotifyFailed:     r.URL.Query().Get("notify_failed"),
 	}
 	if err := a.renderer.Render(w, "admin_settings", data); err != nil {
 		a.logger.Error("render admin_settings", "err", err)
@@ -57,7 +85,6 @@ func (a *App) AdminSettingsPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// AdminSettingsSubmit — сохранение настроек (POST /admin/settings).
 func (a *App) AdminSettingsSubmit(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -72,29 +99,71 @@ func (a *App) AdminSettingsSubmit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/admin/settings?saved=promo", http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
 }
 
-// AdminReminderSettingsSubmit — сохранение периодов напоминаний о подписке.
 func (a *App) AdminReminderSettingsSubmit(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
-	reminderDays, err := storage.ParseReminderDays(r.FormValue("subscription_reminder_days"))
+
+	subHours, err := storage.ParseReminderHours(r.FormValue("subscription_reminder_hours"))
 	if err != nil {
-		http.Error(w, "Некорректные периоды напоминаний", http.StatusBadRequest)
+		http.Error(w, "Некорректные часы напоминаний о подписке", http.StatusBadRequest)
 		return
 	}
-	if err := a.store.SetSetting(r.Context(), storage.SettingSubscriptionReminderDays, storage.FormatReminderDays(reminderDays)); err != nil {
-		a.logger.Error("settings: save reminder days", "err", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+	trainingHours, err := strconv.Atoi(strings.TrimSpace(r.FormValue("training_reminder_hours")))
+	if err != nil || trainingHours < 1 || trainingHours > 8760 {
+		http.Error(w, "Некорректные часы напоминания о тренировке", http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, "/admin/settings?saved=reminders", http.StatusSeeOther)
+
+	quietFrom, err := storage.ParseHourOfDay(r.FormValue("notify_quiet_from"))
+	if err != nil {
+		http.Error(w, "Некорректное время начала тихого окна", http.StatusBadRequest)
+		return
+	}
+	quietTo, err := storage.ParseHourOfDay(r.FormValue("notify_quiet_to"))
+	if err != nil {
+		http.Error(w, "Некорректное время конца тихого окна", http.StatusBadRequest)
+		return
+	}
+
+	pairs := [][2]string{
+		{storage.SettingSubscriptionReminderHours, storage.FormatReminderDays(subHours)},
+		{storage.SettingTrainingReminderHours, strconv.Itoa(trainingHours)},
+		{storage.SettingQuietFrom, strconv.Itoa(quietFrom)},
+		{storage.SettingQuietTo, strconv.Itoa(quietTo)},
+	}
+	for _, p := range pairs {
+		if err := a.store.SetSetting(r.Context(), p[0], p[1]); err != nil {
+			a.logger.Error("settings: save reminder", "err", err, "key", p[0])
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	}
+	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
 }
 
-// AdminSendNotificationSubmit — ручная Telegram-рассылка из админки.
+func (a *App) AdminTemplatesSubmit(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	for _, t := range storage.MessageTemplates() {
+		value := strings.TrimSpace(r.FormValue(t.Key))
+		if err := a.store.SetSetting(r.Context(), t.Key, value); err != nil {
+			a.logger.Error("settings: save template", "err", err, "key", t.Key)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	}
+	http.Redirect(w, r, "/admin/settings?saved=1", http.StatusSeeOther)
+}
+
 func (a *App) AdminSendNotificationSubmit(w http.ResponseWriter, r *http.Request) {
 	if a.cfg.BotToken == "" {
 		http.Error(w, "Telegram-бот не настроен", http.StatusBadRequest)

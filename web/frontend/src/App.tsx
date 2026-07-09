@@ -9,6 +9,7 @@ const SchedulePage = lazy(() => import('./pages/SchedulePage').then((m) => ({ de
 const MerchPage = lazy(() => import('./pages/MerchPage').then((m) => ({ default: m.MerchPage })));
 const CartPage = lazy(() => import('./pages/CartPage').then((m) => ({ default: m.CartPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const SurveyPage = lazy(() => import('./pages/SurveyPage').then((m) => ({ default: m.SurveyPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const LegalOfferPage = lazy(() => import('./pages/LegalOfferPage').then((m) => ({ default: m.LegalOfferPage })));
 const LegalPrivacyPage = lazy(() => import('./pages/LegalPrivacyPage').then((m) => ({ default: m.LegalPrivacyPage })));
@@ -30,6 +31,7 @@ function App() {
             <Route path="/merch" element={<MerchPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/me" element={<ProfilePage />} />
+            <Route path="/survey" element={<SurveyPage />} />
             <Route path="/auth/telegram" element={<LoginPage />} />
             <Route path="/legal/offer" element={<LegalOfferPage />} />
             <Route path="/legal/privacy" element={<LegalPrivacyPage />} />

@@ -8,6 +8,10 @@ import type {
   NewsItem,
   TelegramStartResponse,
   Training,
+  TrainingOccurrence,
+  TrainingRegistration,
+  SurveyResponse,
+  SurveyAnswers,
 } from './types';
 
 export class ApiError extends Error {
@@ -63,6 +67,18 @@ export const api = {
   newsById: (id: number, signal?: AbortSignal) => cachedRequest<NewsItem>(`/news/${id}`, signal),
   merch: (signal?: AbortSignal) => cachedRequest<{ merch: MerchItem[] }>('/merch', signal),
   schedule: (signal?: AbortSignal) => cachedRequest<{ trainings: Training[] }>('/schedule', signal),
+  trainingsUpcoming: (signal?: AbortSignal) =>
+    request<{ occurrences: TrainingOccurrence[] }>('/trainings/upcoming', { signal }),
+  trainingRegister: (trainingId: number, sessionDate: string) =>
+    request<TrainingRegistration>('/trainings/register', {
+      method: 'POST',
+      body: JSON.stringify({ training_id: trainingId, session_date: sessionDate }),
+    }),
+  trainingCancel: (registrationId: number) =>
+    request<{ ok: boolean }>('/trainings/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ registration_id: registrationId }),
+    }),
 
   cart: () => request<CartResponse>('/cart'),
   cartAdd: (serviceId: number) =>
@@ -77,6 +93,13 @@ export const api = {
     }),
 
   checkout: () => request<CheckoutResponse>('/checkout', { method: 'POST' }),
+
+  survey: (signal?: AbortSignal) => request<SurveyResponse>('/survey', { signal }),
+  surveySubmit: (answers: SurveyAnswers) =>
+    request<{ status: string }>('/survey', {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }),
 
   authTelegramStart: () => request<TelegramStartResponse>('/auth/telegram/start'),
   authTelegramStatus: (nonce: string) =>

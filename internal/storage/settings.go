@@ -10,7 +10,6 @@ import (
 	"strings"
 )
 
-// GetSetting возвращает значение настройки. ErrNotFound — если ключа нет.
 func (s *Store) GetSetting(ctx context.Context, key string) (string, error) {
 	var v string
 	err := s.db.QueryRowContext(ctx, `SELECT value FROM app_settings WHERE key = $1`, key).Scan(&v)
@@ -23,7 +22,6 @@ func (s *Store) GetSetting(ctx context.Context, key string) (string, error) {
 	return v, nil
 }
 
-// SetSetting сохраняет значение настройки (upsert).
 func (s *Store) SetSetting(ctx context.Context, key, value string) error {
 	const q = `
 		INSERT INTO app_settings (key, value) VALUES ($1, $2)
@@ -34,13 +32,145 @@ func (s *Store) SetSetting(ctx context.Context, key, value string) error {
 	return nil
 }
 
-// SettingFirst30Promo — ключ переключателя акции «первых 30».
 const SettingFirst30Promo = "first30_promo_enabled"
 
-// SettingSubscriptionReminderDays — за сколько дней до окончания подписки напоминать.
 const SettingSubscriptionReminderDays = "subscription_reminder_days"
 
-// First30PromoEnabled — включён ли переключатель акции в админке (по умолчанию true).
+const (
+	SettingSubscriptionReminderHours = "subscription_reminder_hours"
+	SettingTrainingReminderHours     = "training_reminder_hours"
+	SettingQuietFrom                 = "notify_quiet_from"
+	SettingQuietTo                   = "notify_quiet_to"
+)
+
+const (
+	SettingTmplSubReminder      = "tmpl_subscription_reminder"
+	SettingTmplTrainingReminder = "tmpl_training_reminder"
+	SettingTmplWelcome          = "tmpl_bot_welcome"
+	SettingTmplLoginDone        = "tmpl_bot_login_done"
+	SettingTmplPhoneAsk         = "tmpl_bot_phone_ask"
+	SettingTmplPhoneHave        = "tmpl_bot_phone_have"
+	SettingTmplPhoneNeedStart   = "tmpl_bot_phone_need_start"
+	SettingTmplPhoneWrongUser   = "tmpl_bot_phone_wrong_user"
+	SettingTmplPhoneBad         = "tmpl_bot_phone_bad"
+	SettingTmplPhoneSaved       = "tmpl_bot_phone_saved"
+)
+
+type MessageTemplateDef struct {
+	Key          string
+	Label        string
+	Default      string
+	Placeholders string
+}
+
+var messageTemplates = []MessageTemplateDef{
+	{SettingTmplSubReminder, "Напоминание об окончании подписки", "⏳ Подписка «{title}» истекает через {left}.\nЧтобы продлить — перейдите по ссылке: {url}", "{title} {left} {hours} {url}"},
+	{SettingTmplTrainingReminder, "Напоминание о тренировке", "🏃 Напоминание о тренировке!\n\n«{title}»\n📅 {date} в {time}\n📍 {place}\n\nРасписание и отмена записи: {url}", "{title} {date} {time} {place} {url}"},
+	{SettingTmplWelcome, "Приветствие (/start без входа)", "✅ Вы подключили уведомления The Runish.", "{site}"},
+	{SettingTmplLoginDone, "Вход выполнен (/start со ссылкой)", "✅ Готово! Возвращайтесь на сайт — вход произойдёт автоматически.", "{site}"},
+	{SettingTmplPhoneAsk, "Запрос номера телефона", "📱 Чтобы записываться и оплачивать, поделись номером телефона — он нужен для чека.", "—"},
+	{SettingTmplPhoneHave, "Номер уже сохранён", "✅ Телефон уже сохранён: {phone}. Можно оплачивать на сайте.", "{phone}"},
+	{SettingTmplPhoneNeedStart, "Запрос номера без /start", "Сначала нажми /start, чтобы подключиться, — потом сможешь поделиться номером.", "—"},
+	{SettingTmplPhoneWrongUser, "Поделились чужим контактом", "Поделитесь, пожалуйста, своим номером (кнопкой ниже).", "—"},
+	{SettingTmplPhoneBad, "Номер не распознан", "Не удалось распознать номер — нужен российский телефон.", "—"},
+	{SettingTmplPhoneSaved, "Номер сохранён", "✅ Спасибо! Телефон сохранён — теперь можно оплачивать на сайте.", "—"},
+}
+
+var botTemplateDefaults = func() map[string]string {
+	m := make(map[string]string, len(messageTemplates))
+	for _, t := range messageTemplates {
+		m[t.Key] = t.Default
+	}
+	return m
+}()
+
+func MessageTemplates() []MessageTemplateDef { return messageTemplates }
+
+func (s *Store) MessageTemplate(ctx context.Context, key string) string {
+	def := botTemplateDefaults[key]
+	v, err := s.GetSetting(ctx, key)
+	if err != nil || strings.TrimSpace(v) == "" {
+		return def
+	}
+	return v
+}
+
+func (s *Store) SubscriptionReminderHours(ctx context.Context) ([]int, error) {
+	v, err := s.GetSetting(ctx, SettingSubscriptionReminderHours)
+	if errors.Is(err, ErrNotFound) {
+		return []int{168, 72, 24}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return ParseReminderHours(v)
+}
+
+func (s *Store) TrainingReminderHours(ctx context.Context) (int, error) {
+	v, err := s.GetSetting(ctx, SettingTrainingReminderHours)
+	if errors.Is(err, ErrNotFound) {
+		return 24, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(v))
+	if err != nil || n < 1 || n > 8760 {
+		return 24, nil
+	}
+	return n, nil
+}
+
+func (s *Store) QuietWindow(ctx context.Context) (from, to int) {
+	from = parseHourSetting(ctx, s, SettingQuietFrom, 22)
+	to = parseHourSetting(ctx, s, SettingQuietTo, 9)
+	return from, to
+}
+
+func parseHourSetting(ctx context.Context, s *Store, key string, def int) int {
+	v, err := s.GetSetting(ctx, key)
+	if err != nil {
+		return def
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(v))
+	if err != nil || n < 0 || n > 23 {
+		return def
+	}
+	return n
+}
+
+func ParseReminderHours(raw string) ([]int, error) {
+	seen := make(map[int]bool)
+	var result []int
+	for _, part := range strings.Split(raw, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		n, err := strconv.Atoi(part)
+		if err != nil || n < 1 || n > 8760 {
+			return nil, fmt.Errorf("invalid reminder hour %q", part)
+		}
+		if !seen[n] {
+			seen[n] = true
+			result = append(result, n)
+		}
+	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("empty reminder hours")
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(result)))
+	return result, nil
+}
+
+func ParseHourOfDay(raw string) (int, error) {
+	n, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || n < 0 || n > 23 {
+		return 0, fmt.Errorf("invalid hour %q", raw)
+	}
+	return n, nil
+}
+
 func (s *Store) First30PromoEnabled(ctx context.Context) (bool, error) {
 	v, err := s.GetSetting(ctx, SettingFirst30Promo)
 	if errors.Is(err, ErrNotFound) {
@@ -52,7 +182,6 @@ func (s *Store) First30PromoEnabled(ctx context.Context) (bool, error) {
 	return v == "true", nil
 }
 
-// SubscriptionReminderDays возвращает настроенные периоды напоминаний.
 func (s *Store) SubscriptionReminderDays(ctx context.Context) ([]int, error) {
 	v, err := s.GetSetting(ctx, SettingSubscriptionReminderDays)
 	if errors.Is(err, ErrNotFound) {
@@ -64,7 +193,6 @@ func (s *Store) SubscriptionReminderDays(ctx context.Context) ([]int, error) {
 	return ParseReminderDays(v)
 }
 
-// ParseReminderDays разбирает строку вида "14,7,3,1" в уникальный список дней.
 func ParseReminderDays(raw string) ([]int, error) {
 	seen := make(map[int]bool)
 	var result []int
@@ -89,7 +217,6 @@ func ParseReminderDays(raw string) ([]int, error) {
 	return result, nil
 }
 
-// FormatReminderDays сериализует периоды для сохранения в settings.
 func FormatReminderDays(days []int) string {
 	parts := make([]string, 0, len(days))
 	for _, day := range days {

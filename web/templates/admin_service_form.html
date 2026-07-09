@@ -54,6 +54,27 @@
     </div>
 
     <div class="form-group">
+        <label>Квота занятий по этой услуге</label>
+        <input type="number" name="trainings_quota" min="0" value="{{if and .Service .Service.TrainingsQuota}}{{.Service.TrainingsQuota}}{{end}}" placeholder="напр. 8">
+        <small style="color:#6b7280;margin-top:0.2rem;display:block">Сколько тренировок можно посетить по подписке/услуге. Пусто = без лимита. Для разовой обычно 1.</small>
+
+        <label style="margin-top:1rem;display:block">Тренировки, входящие в услугу («курс»)</label>
+        <small style="color:#6b7280;margin:0.2rem 0 0.5rem;display:block">Отметьте конкретные тренировки. Ничего не отмечено = доступ ко всем тренировкам.</small>
+        {{if .AllTrainings}}
+        <div style="border:1px solid #e5e7eb;border-radius:8px;padding:0.5rem 0.75rem;max-height:220px;overflow:auto">
+            {{range .AllTrainings}}
+            <label style="display:block;font-weight:400;margin:0.2rem 0">
+                <input type="checkbox" name="training_ids" value="{{.ID}}" {{if index $.Selected .ID}}checked{{end}} style="width:auto;margin-right:0.5rem">
+                {{.Title}} — {{.StartTime}} ({{.Place}})
+            </label>
+            {{end}}
+        </div>
+        {{else}}
+        <small style="color:#9ca3af">Тренировок пока нет — сначала создайте их в разделе «Тренировки».</small>
+        {{end}}
+    </div>
+
+    <div class="form-group">
         <label>Порядок сортировки</label>
         <input type="number" name="sort_order" value="{{if .Service}}{{.Service.SortOrder}}{{else}}0{{end}}">
     </div>

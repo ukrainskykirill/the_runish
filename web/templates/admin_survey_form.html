@@ -1,0 +1,135 @@
+{{define "content"}}
+<h2 style="font-size:1.4rem;margin-bottom:1.5rem">
+    {{if .Question.ID}}Редактировать вопрос{{else}}Новый вопрос{{end}}
+</h2>
+
+{{if .Error}}
+<div class="alert-error">{{.Error}}</div>
+{{end}}
+
+<form method="POST" action="{{if .Question.ID}}/admin/survey/{{.Question.ID}}{{else}}/admin/survey{{end}}" style="max-width:680px">
+    <div class="form-group">
+        <label>Ключ (qkey) *</label>
+        <input type="text" name="key" required value="{{.Question.Key}}" placeholder="например, experience" pattern="[a-z0-9_]+">
+        <div class="text-muted" style="font-size:0.8rem">Латиница, цифры, _. Используется как идентификатор ответа — не меняйте без необходимости.</div>
+    </div>
+
+    <div class="form-group">
+        <label>Короткая подпись *</label>
+        <input type="text" name="label" required value="{{.Question.Label}}" placeholder="например, Беговой опыт">
+    </div>
+
+    <div class="form-group">
+        <label>Текст вопроса *</label>
+        <textarea name="prompt" required placeholder="Текст вопроса для пользователя...">{{.Question.Prompt}}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Этап *</label>
+        <select name="phase" id="phase" onchange="togglePhase()">
+            <option value="intro" {{if eq .Question.Phase "intro"}}selected{{end}}>Вступление (всем)</option>
+            <option value="branch" {{if eq .Question.Phase "branch"}}selected{{end}}>Ветка</option>
+            <option value="outro" {{if eq .Question.Phase "outro"}}selected{{end}}>Завершение (всем)</option>
+        </select>
+    </div>
+
+    <div class="form-group" id="branch-field">
+        <label>Ветка *</label>
+        <select name="branch">
+            <option value="novice" {{if eq .Question.Branch "novice"}}selected{{end}}>Новичок</option>
+            <option value="casual" {{if eq .Question.Branch "casual"}}selected{{end}}>Любитель</option>
+            <option value="regular" {{if eq .Question.Branch "regular"}}selected{{end}}>Регуляр</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Тип вопроса *</label>
+        <select name="kind" id="kind" onchange="toggleKind()">
+            <option value="single" {{if eq .Question.Kind "single"}}selected{{end}}>Один выбор</option>
+            <option value="multi" {{if eq .Question.Kind "multi"}}selected{{end}}>Мультивыбор</option>
+            <option value="text" {{if eq .Question.Kind "text"}}selected{{end}}>Свободный текст</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="is_selector" id="is_selector" {{if .Question.IsSelector}}checked{{end}} onchange="toggleSelector()" style="width:auto;margin-right:0.5rem">
+            Вопрос-селектор (ответ выбирает ветку анкеты)
+        </label>
+    </div>
+
+    <div class="form-group" id="options-group">
+        <label>Варианты ответов</label>
+        <div id="options">
+            {{range .Question.Options}}
+            <div class="opt-row" style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center">
+                <input type="text" name="option_label" value="{{.Label}}" placeholder="Вариант ответа" style="flex:1">
+                <select name="option_branch" class="opt-branch">
+                    <option value="">— ветка —</option>
+                    <option value="novice" {{if eq .Branch "novice"}}selected{{end}}>Новичок</option>
+                    <option value="casual" {{if eq .Branch "casual"}}selected{{end}}>Любитель</option>
+                    <option value="regular" {{if eq .Branch "regular"}}selected{{end}}>Регуляр</option>
+                </select>
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.opt-row').remove()">✕</button>
+            </div>
+            {{end}}
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addOption()">+ Вариант</button>
+    </div>
+
+    <div class="form-group">
+        <label>Порядок внутри группы</label>
+        <input type="number" name="position" value="{{.Question.Position}}">
+    </div>
+
+    <div class="form-group">
+        <label>
+            <input type="checkbox" name="is_active" {{if or (not .Question.ID) .Question.IsActive}}checked{{end}} style="width:auto;margin-right:0.5rem">
+            Активен (показывается в анкете)
+        </label>
+    </div>
+
+    <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
+        <button type="submit" class="btn">{{if .Question.ID}}Сохранить{{else}}Создать{{end}}</button>
+        <a href="/admin/survey" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>
+
+<template id="opt-template">
+    <div class="opt-row" style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center">
+        <input type="text" name="option_label" placeholder="Вариант ответа" style="flex:1">
+        <select name="option_branch" class="opt-branch">
+            <option value="">— ветка —</option>
+            <option value="novice">Новичок</option>
+            <option value="casual">Любитель</option>
+            <option value="regular">Регуляр</option>
+        </select>
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.opt-row').remove()">✕</button>
+    </div>
+</template>
+
+<script>
+    function addOption() {
+        const tpl = document.getElementById('opt-template');
+        document.getElementById('options').appendChild(tpl.content.cloneNode(true));
+        toggleSelector();
+    }
+    function togglePhase() {
+        const isBranch = document.getElementById('phase').value === 'branch';
+        document.getElementById('branch-field').style.display = isBranch ? '' : 'none';
+    }
+    function toggleKind() {
+        const isText = document.getElementById('kind').value === 'text';
+        document.getElementById('options-group').style.display = isText ? 'none' : '';
+    }
+    function toggleSelector() {
+        const on = document.getElementById('is_selector').checked;
+        document.querySelectorAll('.opt-branch').forEach(function (el) {
+            el.style.display = on ? '' : 'none';
+        });
+    }
+    togglePhase();
+    toggleKind();
+    toggleSelector();
+</script>
+{{end}}

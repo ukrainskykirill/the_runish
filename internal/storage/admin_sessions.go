@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// CreateAdminSession создаёт новую админ-сессию.
 func (s *Store) CreateAdminSession(ctx context.Context, token string, expiresAt time.Time) error {
 	const q = `INSERT INTO admin_sessions (token, expires_at) VALUES ($1, $2)`
 	_, err := s.db.ExecContext(ctx, q, token, expiresAt)
@@ -18,7 +17,6 @@ func (s *Store) CreateAdminSession(ctx context.Context, token string, expiresAt 
 	return nil
 }
 
-// GetAdminSession проверяет, валиден ли админ-токен.
 func (s *Store) GetAdminSession(ctx context.Context, token string) error {
 	const q = `SELECT 1 FROM admin_sessions WHERE token = $1 AND expires_at > now()`
 	var tmp int
@@ -32,7 +30,6 @@ func (s *Store) GetAdminSession(ctx context.Context, token string) error {
 	return nil
 }
 
-// DeleteAdminSession удаляет админ-сессию (logout).
 func (s *Store) DeleteAdminSession(ctx context.Context, token string) error {
 	const q = `DELETE FROM admin_sessions WHERE token = $1`
 	_, err := s.db.ExecContext(ctx, q, token)

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError, formatPrice } from '../api/client';
 import { CartIcon, CloseIcon } from '../components/icons';
@@ -28,6 +28,26 @@ export function CartPage() {
 
   // Диплинк к боту за телефоном: ?start=phone → бот сразу просит поделиться номером.
   const phoneLink = botUsername ? `https://t.me/${botUsername}?start=phone` : '#';
+
+  useEffect(() => {
+    if (!needPhone) return;
+    let active = true;
+    const tick = () => {
+      if (active) refreshAuth();
+    };
+    const interval = window.setInterval(tick, 3000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [needPhone, refreshAuth]);
 
   // Перебрасываем в бота за номером. Используем синхронную навигацию (не window.open):
   // попап после await браузер блокирует, а переход по location — нет.
@@ -112,7 +132,8 @@ export function CartPage() {
                 <div className="phone-gate">
                   <div className="phone-gate-t">
                     Чтобы оплатить, нужен телефон — он попадёт в чек. Откройте бота в Telegram
-                    и поделитесь номером (или отправьте команду <b>/phone</b>).
+                    и поделитесь номером (или отправьте команду <b>/phone</b>). Номер подхватится
+                    автоматически — можно не обновлять страницу.
                   </div>
                   <a
                     className="btn btn-primary btn-block"
@@ -122,9 +143,7 @@ export function CartPage() {
                   >
                     Поделиться номером в Telegram
                   </a>
-                  <button className="btn btn-ghost btn-sm btn-block" onClick={() => refreshAuth()}>
-                    Я поделился — обновить
-                  </button>
+                  <div className="phone-gate-wait">Ждём номер из Telegram…</div>
                 </div>
               ) : (
                 <button

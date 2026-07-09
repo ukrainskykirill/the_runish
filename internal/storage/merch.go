@@ -9,7 +9,6 @@ import (
 	"therunish/internal/domain"
 )
 
-// CreateMerch вставляет новый товар мерча и возвращает его ID.
 func (s *Store) CreateMerch(ctx context.Context, m *domain.Merch) (int64, error) {
 	const q = `
 		INSERT INTO merch (title, description, price_kop, sort_order, is_active)
@@ -25,7 +24,6 @@ func (s *Store) CreateMerch(ctx context.Context, m *domain.Merch) (int64, error)
 	return id, nil
 }
 
-// UpdateMerch обновляет товар мерча по ID.
 func (s *Store) UpdateMerch(ctx context.Context, m *domain.Merch) error {
 	const q = `
 		UPDATE merch
@@ -44,7 +42,6 @@ func (s *Store) UpdateMerch(ctx context.Context, m *domain.Merch) error {
 	return nil
 }
 
-// DeactivateMerch — мягкое удаление (is_active = false).
 func (s *Store) DeactivateMerch(ctx context.Context, id int64) error {
 	const q = `UPDATE merch SET is_active = false, updated_at = now() WHERE id = $1`
 	res, err := s.db.ExecContext(ctx, q, id)
@@ -58,7 +55,6 @@ func (s *Store) DeactivateMerch(ctx context.Context, id int64) error {
 	return nil
 }
 
-// GetMerch возвращает товар мерча по ID (включая неактивные).
 func (s *Store) GetMerch(ctx context.Context, id int64) (domain.Merch, error) {
 	const q = `
 		SELECT id, title, description, price_kop, sort_order, is_active, created_at, updated_at
@@ -77,7 +73,6 @@ func (s *Store) GetMerch(ctx context.Context, id int64) (domain.Merch, error) {
 	return m, nil
 }
 
-// ListMerch возвращает товары мерча. Если includeInactive=false — только активные.
 func (s *Store) ListMerch(ctx context.Context, includeInactive bool) ([]domain.Merch, error) {
 	q := `
 		SELECT id, title, description, price_kop, sort_order, is_active, created_at, updated_at

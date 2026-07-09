@@ -14,24 +14,22 @@ import (
 
 const (
 	CookieName            = "runish_session"
-	tokenBytes            = 32 // 256 бит
+	tokenBytes            = 32
 	contextKeyUser ctxKey = "user_id"
 )
 
 type ctxKey string
 
-// Manager управляет сессиями: создание, чтение из cookie.
 type Manager struct {
 	store  *storage.Store
 	ttl    time.Duration
-	secure bool // Secure flag для cookie (true только на HTTPS)
+	secure bool
 }
 
 func NewManager(store *storage.Store, ttl time.Duration, secure bool) *Manager {
 	return &Manager{store: store, ttl: ttl, secure: secure}
 }
 
-// Create создаёт новую сессию и ставит cookie в ответ.
 func (m *Manager) Create(w http.ResponseWriter, userID int64) (string, error) {
 	token, err := generateToken()
 	if err != nil {
@@ -56,7 +54,6 @@ func (m *Manager) Create(w http.ResponseWriter, userID int64) (string, error) {
 	return token, nil
 }
 
-// UserFromRequest извлекает userID из cookie. Если сессии нет — возвращает 0, nil.
 func (m *Manager) UserFromRequest(r *http.Request) (int64, error) {
 	token := m.TokenFromRequest(r)
 	if token == "" {
@@ -70,12 +67,10 @@ func (m *Manager) UserFromRequest(r *http.Request) (int64, error) {
 	return userID, err
 }
 
-// SessionID возвращает токен сессии из cookie (пустая строка если нет).
 func (m *Manager) SessionID(r *http.Request) string {
 	return m.TokenFromRequest(r)
 }
 
-// Destroy удаляет сессию и сбрасывает cookie.
 func (m *Manager) Destroy(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(CookieName)
 	if err == nil && c.Value != "" {
@@ -92,7 +87,6 @@ func (m *Manager) Destroy(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// TokenFromRequest — вспомогательный метод для middleware.
 func (m *Manager) TokenFromRequest(r *http.Request) string {
 	c, err := r.Cookie(CookieName)
 	if err != nil || c.Value == "" {

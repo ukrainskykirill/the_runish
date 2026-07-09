@@ -64,6 +64,33 @@ export interface Training {
   updated_at: string;
 }
 
+export interface TrainingOccurrence {
+  training_id: number;
+  title: string;
+  weekday: number;
+  start_time: string; // "HH:MM"
+  place: string;
+  session_date: string; // "YYYY-MM-DD"
+  capacity?: number;
+  registered_count: number;
+  available: boolean;
+  cancelled: boolean;
+  registered: boolean;
+  my_registration_id?: number;
+  in_my_access: boolean;
+  quota_left?: number;
+}
+
+export interface TrainingRegistration {
+  id: number;
+  training_id: number;
+  title: string;
+  session_date: string; // "YYYY-MM-DD"
+  start_time: string; // "HH:MM"
+  place: string;
+  created_at: string;
+}
+
 export interface User {
   id: number;
   telegram_id: number;
@@ -130,6 +157,7 @@ export interface MeResponse {
   user: User | null;
   subscriptions: Subscription[];
   orders: Order[];
+  training_registrations: TrainingRegistration[];
   can_book_free_lesson: boolean;
   can_choose_subscription: boolean;
   bot_username: string;
@@ -138,6 +166,39 @@ export interface MeResponse {
 export interface CheckoutResponse {
   order_id: number;
   payment_url: string;
+}
+
+export type SurveyKind = 'single' | 'multi' | 'text';
+export type SurveyStatus = 'pending' | 'in_progress' | 'completed';
+
+export interface SurveyOption {
+  label: string;
+  branch?: string;
+}
+
+export interface SurveyQuestion {
+  id: number;
+  key: string;
+  phase: 'intro' | 'branch' | 'outro';
+  branch: string;
+  kind: SurveyKind;
+  label: string;
+  prompt: string;
+  options: SurveyOption[];
+  is_selector: boolean;
+  position: number;
+  is_active: boolean;
+}
+
+export type SurveyAnswers = Record<string, string | string[]>;
+
+export interface SurveyResponse {
+  status: SurveyStatus;
+  branch: string;
+  answers: SurveyAnswers;
+  greeting: string;
+  final: string;
+  questions: SurveyQuestion[];
 }
 
 export interface TelegramStartResponse {

@@ -31,20 +31,59 @@
 </div>
 
 <div style="background:#fff;border-radius:8px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);max-width:560px;margin-top:1.25rem">
-    <h3 style="font-size:1.05rem;margin:0 0 0.75rem">Напоминания об окончании подписки</h3>
+    <h3 style="font-size:1.05rem;margin:0 0 0.75rem">Автоматические напоминания</h3>
     <p style="color:#6b7280;font-size:0.9rem;margin:0 0 1rem">
-        Настройте, за сколько дней до окончания подписки бот отправит автоматическое уведомление.
+        За сколько часов до события бот отправит уведомление, и в какое время суток (МСК) уведомления отправлять не нужно.
     </p>
 
     <form method="POST" action="/admin/settings/reminders">
         <div class="form-group">
-            <label>Напоминания об окончании подписки, дней до конца</label>
-            <input type="text" name="subscription_reminder_days" value="{{.ReminderDays}}" placeholder="7,3,1">
+            <label>Окончание подписки — за сколько часов</label>
+            <input type="text" name="subscription_reminder_hours" value="{{.SubReminderHours}}" placeholder="168,72,24">
             <small style="color:#6b7280;margin-top:0.2rem;display:block">
-                Через запятую. Например: 14,7,3,1. Новые периоды начнут работать после сохранения.
+                Через запятую. Например: 168,72,24 (7 дней, 3 дня, сутки). На каждый порог уйдёт одно напоминание.
+            </small>
+        </div>
+        <div class="form-group">
+            <label>Запись на тренировку — за сколько часов</label>
+            <input type="number" name="training_reminder_hours" min="1" max="8760" value="{{.TrainingHours}}" placeholder="24">
+            <small style="color:#6b7280;margin-top:0.2rem;display:block">
+                Одно напоминание перед тренировкой. Например: 24 — за сутки.
+            </small>
+        </div>
+        <div class="form-group">
+            <label>Тихое окно (МСК) — не отправлять с / до</label>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+                <input type="number" name="notify_quiet_from" min="0" max="23" value="{{.QuietFrom}}" style="width:6rem">
+                <span style="color:#6b7280">часов&nbsp;—&nbsp;до</span>
+                <input type="number" name="notify_quiet_to" min="0" max="23" value="{{.QuietTo}}" style="width:6rem">
+                <span style="color:#6b7280">часов</span>
+            </div>
+            <small style="color:#6b7280;margin-top:0.2rem;display:block">
+                Например: с 22 до 9 — ночью бот молчит, напоминание уйдёт в ближайший разрешённый час. Если оба значения равны — тихое окно выключено.
             </small>
         </div>
         <button type="submit" class="btn">Сохранить напоминания</button>
+    </form>
+</div>
+
+<div style="background:#fff;border-radius:8px;padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);max-width:720px;margin-top:1.25rem">
+    <h3 style="font-size:1.05rem;margin:0 0 0.75rem">Шаблоны сообщений</h3>
+    <p style="color:#6b7280;font-size:0.9rem;margin:0 0 1rem">
+        Текст автоматических уведомлений. Подстановки в фигурных скобках заменяются на данные. Оставьте поле пустым, чтобы вернуть текст по умолчанию.
+    </p>
+
+    <form method="POST" action="/admin/settings/templates">
+        {{range .Templates}}
+        <div class="form-group">
+            <label>{{.Label}}</label>
+            <textarea name="{{.Key}}" rows="4">{{.Value}}</textarea>
+            <small style="color:#6b7280;margin-top:0.2rem;display:block">
+                Подстановки: <code>{{.Placeholders}}</code>
+            </small>
+        </div>
+        {{end}}
+        <button type="submit" class="btn">Сохранить шаблоны</button>
     </form>
 </div>
 

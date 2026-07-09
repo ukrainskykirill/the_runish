@@ -10,6 +10,6 @@ type User struct {
 	Phone         string    `json:"phone"`
 	BotDialogOpen bool      `json:"bot_dialog_open"`
 	IsAdmin       bool      `json:"is_admin"`
-	EntryFeePaid  bool      `json:"entry_fee_paid"` // вступительный взнос оплачен (навсегда)
+	EntryFeePaid  bool      `json:"entry_fee_paid"`
 	CreatedAt     time.Time `json:"created_at"`
 }

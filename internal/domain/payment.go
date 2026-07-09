@@ -10,6 +10,7 @@ const (
 	PaymentStatusConfirmed PaymentStatus = "confirmed"
 	PaymentStatusRejected  PaymentStatus = "rejected"
 	PaymentStatusRefunded  PaymentStatus = "refunded"
+	PaymentStatusCancelled PaymentStatus = "cancelled"
 )
 
 type Payment struct {
@@ -24,12 +25,12 @@ type Payment struct {
 	TBankStatus    string
 	PaymentURL     string
 	ErrorCode      string
+	RefundedKop    int64
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	PaidAt         *time.Time
 }
 
-// IsFinal возвращает true, если платёж в терминальном статусе (не pending/new).
 func (p Payment) IsFinal() bool {
 	switch p.Status {
 	case PaymentStatusConfirmed, PaymentStatusRejected, PaymentStatusRefunded:

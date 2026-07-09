@@ -1,0 +1,64 @@
+{{define "content"}}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+    <h2 style="font-size:1.4rem">Анкета — вопросы ({{.Total}})</h2>
+    <a href="/admin/survey/new" class="btn">+ Добавить вопрос</a>
+</div>
+
+<p class="text-muted mb-3" style="max-width:760px">
+    Один шаблон анкеты используется и в Telegram-боте при онбординге, и в личном кабинете на сайте.
+    Сначала идут вступительные вопросы (всем), затем вопросы выбранной ветки и завершающие (всем).
+    Ветка выбирается по ответу на вопрос-селектор.
+</p>
+
+{{range .Groups}}
+<div style="margin-bottom:1.75rem">
+    <h3 style="font-size:1.05rem;margin-bottom:0.6rem">{{.Title}}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:64px">Порядок</th>
+                <th>Ключ</th>
+                <th>Вопрос</th>
+                <th style="width:120px">Тип</th>
+                <th style="width:90px">Активен</th>
+                <th style="width:240px">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Questions}}
+            <tr>
+                <td>
+                    <form method="POST" action="/admin/survey/{{.ID}}/move" style="display:inline">
+                        <input type="hidden" name="dir" value="up">
+                        <button type="submit" class="btn btn-secondary btn-sm" title="Вверх">↑</button>
+                    </form>
+                    <form method="POST" action="/admin/survey/{{.ID}}/move" style="display:inline">
+                        <input type="hidden" name="dir" value="down">
+                        <button type="submit" class="btn btn-secondary btn-sm" title="Вниз">↓</button>
+                    </form>
+                </td>
+                <td><code>{{.Key}}</code></td>
+                <td style="max-width:360px">
+                    <div>{{.Label}}</div>
+                    <div class="text-muted" style="font-size:0.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px">{{.Prompt}}</div>
+                </td>
+                <td>
+                    {{if eq .Kind "single"}}Один выбор{{else if eq .Kind "multi"}}Мультивыбор{{else}}Текст{{end}}
+                    {{if .IsSelector}}<br><span style="color:var(--red-700);font-size:0.78rem">↳ селектор веток</span>{{end}}
+                </td>
+                <td>{{if .IsActive}}✅{{else}}❌{{end}}</td>
+                <td>
+                    <a href="/admin/survey/{{.ID}}/edit" class="btn btn-secondary btn-sm">✏️ Изменить</a>
+                    <form method="POST" action="/admin/survey/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить вопрос «{{.Label}}»?')">
+                        <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                    </form>
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:1.25rem">Нет вопросов</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}
+{{end}}

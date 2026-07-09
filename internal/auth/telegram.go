@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	// TelegramLoginMaxAge — окно валидности данных Login Widget (защита от replay).
 	TelegramLoginMaxAge = 24 * time.Hour
 )
 
@@ -24,7 +23,6 @@ var (
 	ErrMissingFields = errors.New("missing required fields")
 )
 
-// TelegramAuthData — распарсенные данные от Login Widget.
 type TelegramAuthData struct {
 	ID        int64
 	FirstName string
@@ -33,10 +31,9 @@ type TelegramAuthData struct {
 	PhotoURL  string
 	AuthDate  time.Time
 	Hash      string
-	Raw       url.Values // все оригинальные параметры
+	Raw       url.Values
 }
 
-// ParseTelegramAuth парсит query-параметры от Login Widget.
 func ParseTelegramAuth(vals url.Values) (TelegramAuthData, error) {
 	data := TelegramAuthData{Raw: vals}
 
@@ -66,17 +63,13 @@ func ParseTelegramAuth(vals url.Values) (TelegramAuthData, error) {
 	return data, nil
 }
 
-// ValidateTelegramAuth проверяет подпись HMAC-SHA256 и актуальность auth_date.
-// Секрет — это SHA256(BOT_TOKEN).
 func ValidateTelegramAuth(data TelegramAuthData, botToken string) error {
-	// Проверяем, что данные не протухли.
 	if time.Since(data.AuthDate) > TelegramLoginMaxAge {
 		return ErrExpired
 	}
 
 	secret := sha256.Sum256([]byte(botToken))
 
-	// data_check_string: key=value (кроме hash), отсортированные, через \n.
 	keys := make([]string, 0, len(data.Raw))
 	for k := range data.Raw {
 		if k == "hash" {

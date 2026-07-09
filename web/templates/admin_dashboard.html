@@ -143,11 +143,38 @@
         margin: 2px 2px 2px 0;
     }
     .day-sum { font-weight: 600; color: var(--red-700); }
+
+    /* ─── Registrations accent (gold) ─── */
+    .reg-divider {
+        height: 1px;
+        background: var(--border, rgba(122,84,30,0.13));
+        margin: 2.75rem 0 2rem;
+    }
+    .kpi-value.gold {
+        background: linear-gradient(135deg, #e8a23c, #c2740f);
+        -webkit-background-clip: text; background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .bar-reg { background: linear-gradient(180deg, #f0c14b, #d98a16) !important; }
+    .bar-reg:hover { filter: brightness(1.07); }
+    .bar-count-reg { color: #c2740f !important; }
+    .user-chip-reg {
+        display: inline-block;
+        background: linear-gradient(135deg, rgba(232,162,60,0.16), rgba(194,116,15,0.12));
+        color: #9a5b08;
+        border: 1px solid rgba(194,116,15,0.18);
+        border-radius: 99px;
+        padding: 3px 11px;
+        font-size: 12px;
+        font-weight: 600;
+        margin: 2px 2px 2px 0;
+    }
+    .reg-sum { font-weight: 700; color: #c2740f; }
 </style>
 
 <div class="page-hdr">
-    <h2>Статистика оплат</h2>
-    <p>Доходы, активность и кто оплатил</p>
+    <h2>Статистика</h2>
+    <p>Доходы и регистрации: активность за неделю и месяц</p>
 </div>
 
 {{/* ─── KPI cards ─── */}}
@@ -255,6 +282,119 @@
             </tr>
             {{else}}
             <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem">Оплат за месяц не было</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+
+<div class="reg-divider"></div>
+
+<div class="page-hdr">
+    <h2>Регистрации</h2>
+    <p>Новые пользователи и кто присоединился</p>
+</div>
+
+{{/* ─── Registration KPI cards ─── */}}
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Регистраций — месяц</div>
+        <div class="kpi-value gold">{{.Registrations.Month.Total}}</div>
+        <div class="kpi-sub">за текущий календарный месяц</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Регистраций — 7 дней</div>
+        <div class="kpi-value gold">{{.Registrations.Week.Total}}</div>
+        <div class="kpi-sub">за последние 7 дней</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Пик за день — месяц</div>
+        <div class="kpi-value">{{.Registrations.Month.MaxDaily}}</div>
+        <div class="kpi-sub">максимум регистраций в день</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Пик за день — 7 дней</div>
+        <div class="kpi-value">{{.Registrations.Week.MaxDaily}}</div>
+        <div class="kpi-sub">максимум за неделю</div>
+    </div>
+</div>
+
+{{/* ─── Bar chart (week) ─── */}}
+<p class="section-title">По дням — последние 7 дней</p>
+<div class="chart-card">
+    {{if .Registrations.Week.Daily}}
+    <div class="chart-bars">
+        {{$rmax := .Registrations.Week.MaxDaily}}
+        {{range .Registrations.Week.Daily}}
+        <div class="chart-col">
+            <div class="bar-area">
+                <div class="bar bar-reg" style="height: {{pct .Count $rmax}}%">
+                    {{if .Count}}<span class="bar-tip">{{.Count}} рег.</span>{{end}}
+                </div>
+            </div>
+            <div class="bar-meta">
+                <div class="bar-date">{{formatDate .Date}}</div>
+                <div class="bar-count bar-count-reg">{{if .Count}}{{.Count}}{{end}}</div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <p style="text-align:center;color:var(--muted);padding:2rem 0">Регистраций за неделю не было</p>
+    {{end}}
+</div>
+
+{{/* ─── Week detail table ─── */}}
+<div class="day-table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Регистраций</th>
+                <th>Кто присоединился</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Registrations.Week.Daily}}
+            <tr>
+                <td><strong>{{formatDate .Date}}</strong></td>
+                <td class="reg-sum">{{.Count}}</td>
+                <td>
+                    {{if .UserNames}}
+                        {{range .UserNames}}<span class="user-chip-reg">{{.}}</span>{{end}}
+                    {{else}}—{{end}}
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:2rem">Регистраций за неделю не было</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+
+{{/* ─── Month detail table ─── */}}
+<p class="section-title">По дням — текущий месяц</p>
+<div class="day-table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Регистраций</th>
+                <th>Кто присоединился</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Registrations.Month.Daily}}
+            <tr>
+                <td><strong>{{formatDate .Date}}</strong></td>
+                <td class="reg-sum">{{.Count}}</td>
+                <td>
+                    {{if .UserNames}}
+                        {{range .UserNames}}<span class="user-chip-reg">{{.}}</span>{{end}}
+                    {{else}}—{{end}}
+                </td>
+            </tr>
+            {{else}}
+            <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:2rem">Регистраций за месяц не было</td></tr>
             {{end}}
         </tbody>
     </table>

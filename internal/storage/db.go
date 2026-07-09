@@ -11,17 +11,14 @@ import (
 	"strconv"
 	"strings"
 
-	// Регистрируем pgx как драйвер для database/sql.
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-// Store — обёртка над *sql.DB для доступа к Postgres.
 type Store struct {
 	db     *sql.DB
 	logger *slog.Logger
 }
 
-// New устанавливает соединение с БД и возвращает Store.
 func New(ctx context.Context, dsn string, logger *slog.Logger) (*Store, error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -38,14 +35,10 @@ func New(ctx context.Context, dsn string, logger *slog.Logger) (*Store, error) {
 	return &Store{db: db, logger: logger}, nil
 }
 
-// DB возвращает underlying *sql.DB (для пагинации/кастомных запросов).
 func (s *Store) DB() *sql.DB { return s.db }
 
-// Close закрывает пул соединений.
 func (s *Store) Close() error { return s.db.Close() }
 
-// WithTx — единая точка для транзакций. Создаёт tx, вызывает fn, коммитит/роллбэкаит.
-// Обязателен для checkout (orders + order_items + payments) и активации подписки.
 func (s *Store) WithTx(ctx context.Context, fn func(tx *sql.Tx) error) error {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
@@ -67,8 +60,6 @@ func (s *Store) WithTx(ctx context.Context, fn func(tx *sql.Tx) error) error {
 	return nil
 }
 
-// Migrate применяет все .sql файлы из migrationsDir по порядку.
-// Таблица schema_migrations(version) хранит уже применённые. Без библиотеки миграций.
 func (s *Store) Migrate(ctx context.Context, migrationsDir string) error {
 	if _, err := s.db.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -129,7 +120,6 @@ func (s *Store) Migrate(ctx context.Context, migrationsDir string) error {
 	return nil
 }
 
-// pager — вспомогательный тип для LIMIT/OFFSET.
 type pager struct {
 	limit  int
 	offset int
@@ -150,6 +140,5 @@ func (p pager) args(start int) []any {
 }
 
 func (p pager) placeholders(start int) string {
-	// Возвращает "$N,$M" для LIMIT/OFFSET.
 	return "$" + strconv.Itoa(start) + ",$" + strconv.Itoa(start+1)
 }

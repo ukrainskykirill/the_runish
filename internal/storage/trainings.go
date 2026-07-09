@@ -9,19 +9,33 @@ import (
 	"therunish/internal/domain"
 )
 
-// trainingCols — общий SELECT-список. Время отдаём строкой "HH:MM".
 const trainingCols = `id, title, weekday, to_char(start_time, 'HH24:MI') AS start_time,
-	place, is_active, sort_order, created_at, updated_at`
+	place, is_active, sort_order, capacity, created_at, updated_at`
 
-// CreateTraining вставляет тренировку и возвращает её ID.
+func scanTraining(sc rowScanner) (domain.Training, error) {
+	var t domain.Training
+	var capacity sql.NullInt64
+	if err := sc.Scan(
+		&t.ID, &t.Title, &t.Weekday, &t.StartTime, &t.Place,
+		&t.IsActive, &t.SortOrder, &capacity, &t.CreatedAt, &t.UpdatedAt,
+	); err != nil {
+		return domain.Training{}, err
+	}
+	if capacity.Valid {
+		c := int(capacity.Int64)
+		t.Capacity = &c
+	}
+	return t, nil
+}
+
 func (s *Store) CreateTraining(ctx context.Context, t *domain.Training) (int64, error) {
 	const q = `
-		INSERT INTO trainings (title, weekday, start_time, place, is_active, sort_order)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO trainings (title, weekday, start_time, place, is_active, sort_order, capacity)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`
 	var id int64
 	err := s.db.QueryRowContext(ctx, q,
-		t.Title, t.Weekday, t.StartTime, t.Place, t.IsActive, t.SortOrder,
+		t.Title, t.Weekday, t.StartTime, t.Place, t.IsActive, t.SortOrder, t.Capacity,
 	).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("create training: %w", err)
@@ -29,14 +43,13 @@ func (s *Store) CreateTraining(ctx context.Context, t *domain.Training) (int64, 
 	return id, nil
 }
 
-// UpdateTraining обновляет тренировку по ID.
 func (s *Store) UpdateTraining(ctx context.Context, t *domain.Training) error {
 	const q = `
 		UPDATE trainings
-		SET title = $1, weekday = $2, start_time = $3, place = $4, is_active = $5, sort_order = $6, updated_at = now()
-		WHERE id = $7`
+		SET title = $1, weekday = $2, start_time = $3, place = $4, is_active = $5, sort_order = $6, capacity = $7, updated_at = now()
+		WHERE id = $8`
 	res, err := s.db.ExecContext(ctx, q,
-		t.Title, t.Weekday, t.StartTime, t.Place, t.IsActive, t.SortOrder, t.ID,
+		t.Title, t.Weekday, t.StartTime, t.Place, t.IsActive, t.SortOrder, t.Capacity, t.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("update training: %w", err)
@@ -48,7 +61,6 @@ func (s *Store) UpdateTraining(ctx context.Context, t *domain.Training) error {
 	return nil
 }
 
-// DeleteTraining удаляет тренировку по ID.
 func (s *Store) DeleteTraining(ctx context.Context, id int64) error {
 	const q = `DELETE FROM trainings WHERE id = $1`
 	res, err := s.db.ExecContext(ctx, q, id)
@@ -62,14 +74,9 @@ func (s *Store) DeleteTraining(ctx context.Context, id int64) error {
 	return nil
 }
 
-// GetTraining возвращает тренировку по ID (включая неактивные).
 func (s *Store) GetTraining(ctx context.Context, id int64) (domain.Training, error) {
 	q := `SELECT ` + trainingCols + ` FROM trainings WHERE id = $1`
-	var t domain.Training
-	err := s.db.QueryRowContext(ctx, q, id).Scan(
-		&t.ID, &t.Title, &t.Weekday, &t.StartTime, &t.Place,
-		&t.IsActive, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt,
-	)
+	t, err := scanTraining(s.db.QueryRowContext(ctx, q, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Training{}, ErrNotFound
 	}
@@ -79,8 +86,6 @@ func (s *Store) GetTraining(ctx context.Context, id int64) (domain.Training, err
 	return t, nil
 }
 
-// ListTrainings возвращает тренировки. Если includeInactive=false — только активные.
-// Отсортированы по дню недели, времени, порядку.
 func (s *Store) ListTrainings(ctx context.Context, includeInactive bool) ([]domain.Training, error) {
 	q := `SELECT ` + trainingCols + ` FROM trainings`
 	if !includeInactive {
@@ -96,11 +101,8 @@ func (s *Store) ListTrainings(ctx context.Context, includeInactive bool) ([]doma
 
 	var trainings []domain.Training
 	for rows.Next() {
-		var t domain.Training
-		if err := rows.Scan(
-			&t.ID, &t.Title, &t.Weekday, &t.StartTime, &t.Place,
-			&t.IsActive, &t.SortOrder, &t.CreatedAt, &t.UpdatedAt,
-		); err != nil {
+		t, err := scanTraining(rows)
+		if err != nil {
 			return nil, fmt.Errorf("scan training: %w", err)
 		}
 		trainings = append(trainings, t)

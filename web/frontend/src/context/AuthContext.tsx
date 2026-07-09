@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
-import type { Order, Subscription, User } from '../api/types';
+import type { Order, Subscription, TrainingRegistration, User } from '../api/types';
 
 interface AuthContextValue {
   user: User | null;
   subscriptions: Subscription[];
   orders: Order[];
+  trainingRegistrations: TrainingRegistration[];
   canBookFreeLesson: boolean;
   canChooseSubscription: boolean;
   botUsername: string;
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [trainingRegistrations, setTrainingRegistrations] = useState<TrainingRegistration[]>([]);
   const [canBookFreeLesson, setCanBookFreeLesson] = useState(true);
   const [canChooseSubscription, setCanChooseSubscription] = useState(true);
   const [botUsername, setBotUsername] = useState('');
@@ -31,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user);
       setSubscriptions(data.subscriptions);
       setOrders(data.orders);
+      setTrainingRegistrations(data.training_registrations ?? []);
       setCanBookFreeLesson(data.can_book_free_lesson);
       setCanChooseSubscription(data.can_choose_subscription);
       setBotUsername(data.bot_username);
@@ -48,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSubscriptions([]);
     setOrders([]);
+    setTrainingRegistrations([]);
     setCanBookFreeLesson(true);
     setCanChooseSubscription(true);
   }, []);
@@ -58,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         subscriptions,
         orders,
+        trainingRegistrations,
         canBookFreeLesson,
         canChooseSubscription,
         botUsername,

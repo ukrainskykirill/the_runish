@@ -2,24 +2,53 @@ package domain
 
 import "time"
 
-// SurveyStatus — статус прохождения онбординг-анкеты.
 type SurveyStatus string
 
 const (
-	SurveyPending    SurveyStatus = "pending"     // создана при регистрации, ещё не начата
-	SurveyInProgress SurveyStatus = "in_progress" // идёт диалог в боте
-	SurveyCompleted  SurveyStatus = "completed"   // пройдена
+	SurveyPending    SurveyStatus = "pending"
+	SurveyInProgress SurveyStatus = "in_progress"
+	SurveyCompleted  SurveyStatus = "completed"
 )
 
-// Survey — состояние и ответы онбординг-анкеты пользователя.
 type Survey struct {
 	UserID      int64
 	Status      SurveyStatus
-	Branch      string         // novice | casual | regular (пусто до выбора)
-	Step        string         // ключ текущего шага
-	Answers     map[string]any // step_key -> string | []any (мультивыбор)
-	MsgID       *int64         // message_id текущего вопроса
+	Branch      string
+	Step        string
+	Answers     map[string]any
+	MsgID       *int64
 	StartedAt   *time.Time
 	CompletedAt *time.Time
 	CreatedAt   time.Time
+}
+
+const (
+	SurveyPhaseIntro  = "intro"
+	SurveyPhaseBranch = "branch"
+	SurveyPhaseOutro  = "outro"
+
+	SurveyKindSingle = "single"
+	SurveyKindMulti  = "multi"
+	SurveyKindText   = "text"
+)
+
+type SurveyOption struct {
+	Label  string `json:"label"`
+	Branch string `json:"branch,omitempty"`
+}
+
+type SurveyQuestion struct {
+	ID         int64          `json:"id"`
+	Key        string         `json:"key"`
+	Phase      string         `json:"phase"`
+	Branch     string         `json:"branch"`
+	Kind       string         `json:"kind"`
+	Label      string         `json:"label"`
+	Prompt     string         `json:"prompt"`
+	Options    []SurveyOption `json:"options"`
+	IsSelector bool           `json:"is_selector"`
+	Position   int            `json:"position"`
+	IsActive   bool           `json:"is_active"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
 }

@@ -1,4 +1,5 @@
 import { api } from '../api/client';
+import { EntryFeeNotice } from '../components/EntryFeeNotice';
 import { ErrorState, LoadingGrid } from '../components/LoadState';
 import { ServiceCard } from '../components/cards/ServiceCard';
 import { useCart } from '../context/CartContext';
@@ -27,11 +28,14 @@ export function CatalogPage() {
           ) : services.length === 0 ? (
             <div className="empty-state">Каталог пока пуст</div>
           ) : (
-            <div className="cat-grid">
-              {services.map((service) => (
-                <ServiceCard key={service.id} service={service} onAdd={add} />
-              ))}
-            </div>
+            <>
+              <EntryFeeNotice />
+              <div className="cat-grid">
+                {services.map((service) => (
+                  <ServiceCard key={service.id} service={service} onAdd={add} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </section>

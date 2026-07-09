@@ -1,8 +1,7 @@
 const ROW = (
   <span>
-    The Runish <i className="star">✦</i> Живи в движении <i className="star">✦</i> Бегаем вместе{' '}
-    <i className="star">✦</i> The Runish <i className="star">✦</i> Живи в движении{' '}
-    <i className="star">✦</i> Бегаем вместе <i className="star">✦</i>
+    The Runish <i className="star">✦</i> Рожденные двигаться <i className="star">✦</i> The Runish{' '}
+    <i className="star">✦</i> Рожденные двигаться <i className="star">✦</i>
   </span>
 );
 

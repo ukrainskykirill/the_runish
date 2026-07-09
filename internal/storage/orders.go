@@ -9,8 +9,6 @@ import (
 	"therunish/internal/domain"
 )
 
-// CreateOrder создаёт заказ и позиции в одной транзакции.
-// Снимки цены/названия фиксируются на момент покупки.
 func (s *Store) CreateOrder(ctx context.Context, order *domain.Order) (int64, error) {
 	var orderID int64
 	err := s.WithTx(ctx, func(tx *sql.Tx) error {
@@ -44,7 +42,6 @@ func (s *Store) CreateOrder(ctx context.Context, order *domain.Order) (int64, er
 	return orderID, nil
 }
 
-// GetOrderByID возвращает заказ с позициями.
 func (s *Store) GetOrderByID(ctx context.Context, id int64) (domain.Order, error) {
 	const q = `
 		SELECT id, user_id, amount_kop, status, contact_phone, contact_name, contact_tg, created_at
@@ -69,7 +66,6 @@ func (s *Store) GetOrderByID(ctx context.Context, id int64) (domain.Order, error
 	return o, nil
 }
 
-// ListOrdersByUser возвращает заказы юзера (без позиций) — для личного кабинета.
 func (s *Store) ListOrdersByUser(ctx context.Context, userID int64) ([]domain.Order, error) {
 	const q = `
 		SELECT id, user_id, amount_kop, status, contact_phone, contact_name, contact_tg, created_at

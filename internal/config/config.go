@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type Config struct {
 	HTTPAddr string
-	BaseURL  string // без слэша на конце
+	BaseURL  string
 
 	DatabaseURL string
 
@@ -24,26 +25,24 @@ type Config struct {
 	TBankPassword    string
 	TBankAPIBase     string
 
-	// 54-ФЗ: фискальные параметры чека.
-	TBankTaxation      string // система налогообложения: usn_income, osn, …
-	TBankTax           string // ставка НДС: none, vat0, vat10, vat20
-	TBankPaymentObject string // тип предмета расчёта: service, commodity, …
-	TBankPaymentMethod string // способ расчёта: full_payment, full_prepayment
+	TBankTaxation      string
+	TBankTax           string
+	TBankPaymentObject string
+	TBankPaymentMethod string
 
 	AdminToken string
 
-	// Админ-логин/пароль (без Telegram).
 	AdminLogin    string
 	AdminPassword string
 
-	// "tbank" | "mock"
 	PaymentProvider string
 
-	// RUN_WORKER=1 — крутить фоновый воркер (бот, напоминания, истечение, GetState)
-	// горутиной прямо в web-процессе (один процесс на один core, напр. на Amvera).
-	// ВАЖНО: при RUN_WORKER нельзя поднимать >1 реплики web — задвоится поллинг бота
-	// и напоминания.
 	RunWorker bool
+
+	SentryDSN         string
+	SentryEnvironment string
+	AlertBotToken     string
+	AlertChatID       int64
 
 	LogLevel slog.Level
 }
@@ -59,7 +58,6 @@ func Load() (Config, error) {
 		TBankPassword:    os.Getenv("TBANK_PASSWORD"),
 		TBankAPIBase:     getenv("TBANK_API_BASE", "https://securepay.tinkoff.ru/v2"),
 
-		// 54-ФЗ: дефолты — УСН доход, без НДС, оплата услуг.
 		TBankTaxation:      getenv("TBANK_TAXATION", "usn_income"),
 		TBankTax:           getenv("TBANK_TAX", "none"),
 		TBankPaymentObject: getenv("TBANK_PAYMENT_OBJECT", "service"),
@@ -69,6 +67,17 @@ func Load() (Config, error) {
 		AdminPassword:      getenv("ADMIN_PASSWORD", "1111"),
 		PaymentProvider:    getenv("PAYMENT_PROVIDER", "mock"),
 		RunWorker:          getenv("RUN_WORKER", "") == "1",
+		SentryDSN:          os.Getenv("SENTRY_DSN"),
+		SentryEnvironment:  getenv("SENTRY_ENVIRONMENT", "production"),
+		AlertBotToken:      os.Getenv("ALERT_BOT_TOKEN"),
+	}
+
+	if v := os.Getenv("ALERT_CHAT_ID"); v != "" {
+		id, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return Config{}, fmt.Errorf("parse ALERT_CHAT_ID: %w", err)
+		}
+		cfg.AlertChatID = id
 	}
 
 	ttl, err := time.ParseDuration(getenv("SESSION_TTL", "720h"))
@@ -84,8 +93,6 @@ func Load() (Config, error) {
 			cfg.LogLevel = lv
 		}
 	}
-
-	// TODO(prod): вынести BotToken/BotUsername в обязательные после заведения боевого бота.
 
 	required := map[string]string{
 		"DATABASE_URL": cfg.DatabaseURL,

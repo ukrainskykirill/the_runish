@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Training } from '../api/types';
 import monogramCream from '../assets/monogram-cream.png';
 import { HeroVideo } from '../components/HeroVideo';
+import { EntryFeeNotice } from '../components/EntryFeeNotice';
 import { FeatureCard } from '../components/cards/FeatureCard';
 import { MerchCard } from '../components/cards/MerchCard';
 import { NewsCard } from '../components/cards/NewsCard';
@@ -81,10 +82,6 @@ export function HomePage() {
         <div className="hero-track" />
         <div className="wrap hero-in">
           <div className="hero-copy">
-            <div className="hero-eyebrow">
-              <span className="dot" />
-              Беговой клуб · Москва
-            </div>
             <div className="hero-title">
               <img className="hero-mark" src={monogramCream} alt="The Runish" />
               <h1 className="d1">
@@ -149,7 +146,31 @@ export function HomePage() {
 
       <ScheduleCalendar trainings={trainings} />
 
-      <section className="sec alt" id="news">
+      <section className="sec alt" id="runners">
+        <div className="wrap">
+          <div className="sec-head between">
+            <div>
+              <div className="eb">Пробежки и подписки</div>
+              <h2 className="d2">Выбери формат</h2>
+              <p>
+                Начни с бесплатного пробного занятия. Для подписок нужно один раз оплатить
+                вступительный взнос — дальше выбирай формат и оплачивай онлайн.
+              </p>
+            </div>
+            <Link className="btn btn-ghost btn-sm" to="/runners">
+              Все пробежки
+            </Link>
+          </div>
+          <EntryFeeNotice />
+          <div className="cat-grid">
+            {services.map((service) => (
+              <ServiceCard key={service.id} service={service} onAdd={add} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sec" id="news">
         <div className="wrap">
           <div className="sec-head between">
             <div>
@@ -163,29 +184,6 @@ export function HomePage() {
           <div className="news-grid">
             {news.map((item, i) => (
               <NewsCard key={item.id} news={item} iconIndex={i} onReadMore={setSelectedNewsId} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="sec" id="runners">
-        <div className="wrap">
-          <div className="sec-head between">
-            <div>
-              <div className="eb">Пробежки и подписки</div>
-              <h2 className="d2">Выбери формат</h2>
-              <p>
-                Начни с бесплатного пробного занятия или сразу бери безлимит. Добавляй в корзину и
-                оплачивай онлайн через Т-Банк.
-              </p>
-            </div>
-            <Link className="btn btn-ghost btn-sm" to="/runners">
-              Все пробежки
-            </Link>
-          </div>
-          <div className="cat-grid">
-            {services.map((service) => (
-              <ServiceCard key={service.id} service={service} onAdd={add} />
             ))}
           </div>
         </div>

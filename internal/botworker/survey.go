@@ -12,9 +12,18 @@ import (
 	"therunish/internal/telegram"
 )
 
-// maybeStartOrContinueSurvey запускает онбординг-анкету для нового юзера (status=pending)
-// сразу после регистрации в боте, либо повторяет текущий вопрос, если анкета уже идёт.
-// Для пользователей без записи (зарегистрированы до фичи) и завершивших — ничего не делает.
+func (w *Worker) surveyTemplate(ctx context.Context) (*survey.Template, bool) {
+	qs, err := w.store.ListSurveyQuestions(ctx, true)
+	if err != nil {
+		w.logger.Error("survey: load template", "err", err)
+		return nil, false
+	}
+	if len(qs) == 0 {
+		return nil, false
+	}
+	return survey.Build(qs), true
+}
+
 func (w *Worker) maybeStartOrContinueSurvey(ctx context.Context, userID, chatID int64) {
 	sv, err := w.store.GetSurvey(ctx, userID)
 	if errors.Is(err, storage.ErrNotFound) {
@@ -25,19 +34,22 @@ func (w *Worker) maybeStartOrContinueSurvey(ctx context.Context, userID, chatID 
 		return
 	}
 
+	tmpl, ok := w.surveyTemplate(ctx)
+	if !ok {
+		return
+	}
+
 	switch sv.Status {
 	case domain.SurveyPending:
 		if err := w.bot.SendMessage(ctx, chatID, survey.Greeting()); err != nil {
 			w.logger.Error("survey: send greeting", "err", err, "user_id", userID)
 		}
-		w.sendStep(ctx, chatID, userID, "", survey.FirstStep(), map[string]any{})
+		w.sendStep(ctx, tmpl, chatID, userID, "", tmpl.FirstStep(), map[string]any{})
 	case domain.SurveyInProgress:
-		// Повторный /start посреди анкеты — просто переспросим текущий вопрос.
-		w.sendStep(ctx, chatID, userID, sv.Branch, sv.Step, sv.Answers)
+		w.sendStep(ctx, tmpl, chatID, userID, sv.Branch, sv.Step, sv.Answers)
 	}
 }
 
-// handleSurveyText обрабатывает свободный ввод как ответ на текстовый шаг анкеты.
 func (w *Worker) handleSurveyText(ctx context.Context, tgID, chatID int64, text string) {
 	if text == "" {
 		return
@@ -50,12 +62,15 @@ func (w *Worker) handleSurveyText(ctx context.Context, tgID, chatID int64, text 
 	if err != nil || sv.Status != domain.SurveyInProgress {
 		return
 	}
-	st, ok := survey.Get(sv.Step)
+	tmpl, ok := w.surveyTemplate(ctx)
+	if !ok {
+		return
+	}
+	st, ok := tmpl.Get(sv.Step)
 	if !ok {
 		return
 	}
 	if st.Kind != survey.Text {
-		// Ждём нажатия кнопки, а не текста.
 		_ = w.bot.SendMessage(ctx, chatID, "Пожалуйста, выбери вариант кнопкой ниже 🙂")
 		return
 	}
@@ -64,10 +79,9 @@ func (w *Worker) handleSurveyText(ctx context.Context, tgID, chatID int64, text 
 		sv.Answers = map[string]any{}
 	}
 	sv.Answers[sv.Step] = text
-	w.advance(ctx, chatID, user.ID, sv.Branch, sv.Step, sv.Answers)
+	w.advance(ctx, tmpl, chatID, user.ID, sv.Branch, sv.Step, sv.Answers)
 }
 
-// handleCallbackQuery обрабатывает нажатия инлайн-кнопок (одиночный и мульти-выбор).
 func (w *Worker) handleCallbackQuery(ctx context.Context, u telegram.Update) {
 	cq := u.CallbackQuery
 	_ = w.bot.AnswerCallbackQuery(ctx, cq.ID)
@@ -86,11 +100,16 @@ func (w *Worker) handleCallbackQuery(ctx context.Context, u telegram.Update) {
 		return
 	}
 
+	tmpl, ok := w.surveyTemplate(ctx)
+	if !ok {
+		return
+	}
+
 	stepKey, arg, ok := splitCallback(cq.Data)
 	if !ok || stepKey != sv.Step {
-		return // устаревшая или чужая кнопка
+		return
 	}
-	st, ok := survey.Get(stepKey)
+	st, ok := tmpl.Get(stepKey)
 	if !ok {
 		return
 	}
@@ -104,16 +123,16 @@ func (w *Worker) handleCallbackQuery(ctx context.Context, u telegram.Update) {
 		if err != nil || idx < 0 || idx >= len(st.Options) {
 			return
 		}
-		chosen := st.Options[idx]
+		chosen := st.Options[idx].Label
 		sv.Answers[stepKey] = chosen
 		if sv.MsgID != nil {
 			_ = w.bot.EditMessageText(ctx, chatID, *sv.MsgID, st.Text+"\n\n✅ "+chosen, nil)
 		}
 		branch := sv.Branch
-		if stepKey == "experience" {
-			branch = survey.BranchFor(idx)
+		if st.IsSelector {
+			branch = survey.BranchForOption(st, idx)
 		}
-		w.advance(ctx, chatID, user.ID, branch, stepKey, sv.Answers)
+		w.advance(ctx, tmpl, chatID, user.ID, branch, stepKey, sv.Answers)
 
 	case survey.Multi:
 		if arg == "done" {
@@ -124,25 +143,24 @@ func (w *Worker) handleCallbackQuery(ctx context.Context, u telegram.Update) {
 			if sv.MsgID != nil {
 				_ = w.bot.EditMessageText(ctx, chatID, *sv.MsgID, st.Text+"\n\n✅ "+summary, nil)
 			}
-			w.advance(ctx, chatID, user.ID, sv.Branch, stepKey, sv.Answers)
+			w.advance(ctx, tmpl, chatID, user.ID, sv.Branch, stepKey, sv.Answers)
 			return
 		}
 		idx, err := strconv.Atoi(arg)
 		if err != nil || idx < 0 || idx >= len(st.Options) {
 			return
 		}
-		selected := toggle(selectedStrings(sv.Answers[stepKey]), st.Options[idx])
+		selected := toggle(selectedStrings(sv.Answers[stepKey]), st.Options[idx].Label)
 		sv.Answers[stepKey] = selected
 		w.saveState(ctx, user.ID, sv.Branch, stepKey, sv.Answers, sv.MsgID)
 		if sv.MsgID != nil {
-			_ = w.bot.EditMessageText(ctx, chatID, *sv.MsgID, st.Text, multiKeyboard(stepKey, st.Options, selected))
+			_ = w.bot.EditMessageText(ctx, chatID, *sv.MsgID, st.Text, multiKeyboard(stepKey, st.OptionLabels(), selected))
 		}
 	}
 }
 
-// sendStep отправляет вопрос текущего шага и сохраняет состояние анкеты.
-func (w *Worker) sendStep(ctx context.Context, chatID, userID int64, branch, stepKey string, answers map[string]any) {
-	st, ok := survey.Get(stepKey)
+func (w *Worker) sendStep(ctx context.Context, tmpl *survey.Template, chatID, userID int64, branch, stepKey string, answers map[string]any) {
+	st, ok := tmpl.Get(stepKey)
 	if !ok {
 		w.logger.Error("survey: unknown step", "step", stepKey)
 		return
@@ -157,7 +175,7 @@ func (w *Worker) sendStep(ctx context.Context, chatID, userID int64, branch, ste
 		w.saveState(ctx, userID, branch, stepKey, answers, nil)
 
 	case survey.Single:
-		msgID, err := w.bot.SendMessageWithKeyboard(ctx, chatID, st.Text, singleKeyboard(stepKey, st.Options))
+		msgID, err := w.bot.SendMessageWithKeyboard(ctx, chatID, st.Text, singleKeyboard(stepKey, st.OptionLabels()))
 		if err != nil {
 			w.logger.Error("survey: send single step", "err", err, "step", stepKey)
 			return
@@ -166,7 +184,7 @@ func (w *Worker) sendStep(ctx context.Context, chatID, userID int64, branch, ste
 
 	case survey.Multi:
 		selected := selectedStrings(answers[stepKey])
-		msgID, err := w.bot.SendMessageWithKeyboard(ctx, chatID, st.Text, multiKeyboard(stepKey, st.Options, selected))
+		msgID, err := w.bot.SendMessageWithKeyboard(ctx, chatID, st.Text, multiKeyboard(stepKey, st.OptionLabels(), selected))
 		if err != nil {
 			w.logger.Error("survey: send multi step", "err", err, "step", stepKey)
 			return
@@ -175,9 +193,8 @@ func (w *Worker) sendStep(ctx context.Context, chatID, userID int64, branch, ste
 	}
 }
 
-// advance переходит к следующему шагу либо завершает анкету.
-func (w *Worker) advance(ctx context.Context, chatID, userID int64, branch, curStep string, answers map[string]any) {
-	next, done := survey.Next(branch, curStep)
+func (w *Worker) advance(ctx context.Context, tmpl *survey.Template, chatID, userID int64, branch, curStep string, answers map[string]any) {
+	next, done := tmpl.Next(branch, curStep)
 	if done {
 		if err := w.store.CompleteSurvey(ctx, userID, answers); err != nil {
 			w.logger.Error("survey: complete", "err", err, "user_id", userID)
@@ -187,7 +204,7 @@ func (w *Worker) advance(ctx context.Context, chatID, userID int64, branch, curS
 		}
 		return
 	}
-	w.sendStep(ctx, chatID, userID, branch, next, answers)
+	w.sendStep(ctx, tmpl, chatID, userID, branch, next, answers)
 }
 
 func (w *Worker) saveState(ctx context.Context, userID int64, branch, step string, answers map[string]any, msgID *int64) {
@@ -195,8 +212,6 @@ func (w *Worker) saveState(ctx context.Context, userID int64, branch, step strin
 		w.logger.Error("survey: save state", "err", err, "user_id", userID)
 	}
 }
-
-// --- клавиатуры и утилиты ---
 
 func singleKeyboard(stepKey string, options []string) telegram.InlineKeyboard {
 	kb := make(telegram.InlineKeyboard, 0, len(options))
@@ -225,7 +240,6 @@ func multiKeyboard(stepKey string, options, selected []string) telegram.InlineKe
 	return kb
 }
 
-// splitCallback разбирает callback-данные вида "<stepKey>|<arg>".
 func splitCallback(data string) (stepKey, arg string, ok bool) {
 	i := strings.IndexByte(data, '|')
 	if i < 0 {
@@ -234,8 +248,6 @@ func splitCallback(data string) (stepKey, arg string, ok bool) {
 	return data[:i], data[i+1:], true
 }
 
-// selectedStrings извлекает выбранные опции из значения answers (string-слайс,
-// который после JSON-раунда приходит как []any).
 func selectedStrings(v any) []string {
 	switch t := v.(type) {
 	case []string:

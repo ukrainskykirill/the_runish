@@ -15,6 +15,7 @@ import (
 	"therunish/internal/botworker"
 	"therunish/internal/config"
 	"therunish/internal/handlers"
+	"therunish/internal/observability"
 	"therunish/internal/payment"
 	"therunish/internal/render"
 	"therunish/internal/session"
@@ -24,14 +25,15 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
-
 	cfg, err := config.Load()
 	if err != nil {
-		logger.Error("config load", "err", err)
+		slog.New(slog.NewJSONHandler(os.Stdout, nil)).Error("config load", "err", err)
 		os.Exit(1)
 	}
+
+	logger, flush := observability.Setup(cfg)
+	defer flush()
+	slog.SetDefault(logger)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -43,14 +45,12 @@ func main() {
 	}
 	defer store.Close()
 
-	// Применяем миграции при старте (флаг -migrate или автоматически).
 	if err := store.Migrate(ctx, "migrations"); err != nil {
 		logger.Error("migrate", "err", err)
 		os.Exit(1)
 	}
 	logger.Info("migrations applied")
 
-	// Парсим шаблоны один раз.
 	renderer, err := render.New(
 		os.DirFS("web/templates"),
 		nil,
@@ -71,6 +71,8 @@ func main() {
 			"admin_users.html",
 			"admin_user_detail.html",
 			"admin_subscription_form.html",
+			"admin_survey.html",
+			"admin_survey_form.html",
 		},
 	)
 	if err != nil {
@@ -78,14 +80,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Сессии. Secure cookie только на HTTPS.
 	secure := strings.HasPrefix(cfg.BaseURL, "https://")
 	sessions := session.NewManager(store, cfg.SessionTTL, secure)
 
-	// Middleware.
 	mw := auth.NewMiddleware(sessions, store)
 
-	// Платёжный провайдер.
 	var provider payment.PaymentProvider
 	if cfg.PaymentProvider == "mock" {
 		provider = payment.NewMock(cfg.BaseURL + "/payment/mock")
@@ -93,10 +92,6 @@ func main() {
 		provider = payment.NewTBank(cfg.TBankTerminalKey, cfg.TBankPassword, cfg.TBankAPIBase)
 	}
 
-	// Фоновые задачи. При RUN_WORKER=1 web сам крутит полный воркер (бот, напоминания,
-	// истечение, GetState) — одно приложение на один процесс (например, на Amvera).
-	// Иначе (раздельный деплой) web держит только лёгкую GetState-подстраховку, а полный
-	// воркер запускается отдельным процессом (cmd/worker).
 	if cfg.RunWorker {
 		bot := telegram.New(cfg.BotToken)
 		go botworker.New(store, provider, bot, cfg, logger).Run(ctx)
@@ -106,7 +101,6 @@ func main() {
 		go poller.Run(ctx)
 	}
 
-	// App + routes.
 	app := handlers.NewApp(handlers.Deps{
 		Cfg:      cfg,
 		Store:    store,
@@ -119,13 +113,12 @@ func main() {
 
 	srv := &http.Server{
 		Addr:         cfg.HTTPAddr,
-		Handler:      app.Routes(),
+		Handler:      observability.Recover(logger)(app.Routes()),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Запуск сервера в горутине.
 	go func() {
 		logger.Info("server starting", "addr", cfg.HTTPAddr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

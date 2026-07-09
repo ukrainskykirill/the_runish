@@ -6,25 +6,20 @@ import (
 	"time"
 
 	"therunish/internal/domain"
+	"therunish/internal/observability"
 	"therunish/internal/payment"
 	"therunish/internal/storage"
 )
 
-// PendingPaymentPoller — фоновый воркер, который периодически опрашивает
-// T-Bank GetState для платежей, застрявших в pending.
-// Подстраховывает webhook: если уведомление потерялось, воркер синхронизирует статус.
 type PendingPaymentPoller struct {
 	store    *storage.Store
 	provider payment.PaymentProvider
 	logger   *slog.Logger
 
-	// Интервал опроса БД на наличие stale pending-платежей.
-	interval time.Duration
-	// Платёж считается stale, если updated_at старше этого threshold.
+	interval   time.Duration
 	staleAfter time.Duration
 }
 
-// NewPendingPaymentPoller создаёт воркер с дефолтными таймингами.
 func NewPendingPaymentPoller(store *storage.Store, provider payment.PaymentProvider, logger *slog.Logger) *PendingPaymentPoller {
 	return &PendingPaymentPoller{
 		store:      store,
@@ -35,7 +30,6 @@ func NewPendingPaymentPoller(store *storage.Store, provider payment.PaymentProvi
 	}
 }
 
-// Run запускает цикл опроса. Блокирует до отмены ctx.
 func (p *PendingPaymentPoller) Run(ctx context.Context) {
 	ticker := time.NewTicker(p.interval)
 	defer ticker.Stop()
@@ -56,7 +50,6 @@ func (p *PendingPaymentPoller) Run(ctx context.Context) {
 	}
 }
 
-// tick — один цикл опроса: найти stale pending-платежи, опросить GetState.
 func (p *PendingPaymentPoller) tick(ctx context.Context) {
 	payments, err := p.store.ListPendingPaymentsOlderThan(ctx, p.staleAfter)
 	if err != nil {
@@ -72,7 +65,6 @@ func (p *PendingPaymentPoller) tick(ctx context.Context) {
 	for i := range payments {
 		pm := payments[i]
 		if pm.TBankPaymentID == "" {
-			// Нет PaymentId — нечего опрашивать (Init не завершился нормально).
 			continue
 		}
 		p.checkOne(ctx, pm)
@@ -82,11 +74,8 @@ func (p *PendingPaymentPoller) tick(ctx context.Context) {
 func (p *PendingPaymentPoller) checkOne(ctx context.Context, pm domain.Payment) {
 	status, err := p.provider.GetState(ctx, pm.TBankPaymentID)
 	if err != nil {
-		p.logger.Error("poller: getstate",
-			"payment_id", pm.ID,
-			"tbank_payment_id", pm.TBankPaymentID,
-			"err", err,
-		)
+		observability.Alert(ctx, p.logger, "Оплата: не удалось проверить статус платежа (GetState)", err,
+			"payment_id", pm.ID, "tbank_payment_id", pm.TBankPaymentID)
 		return
 	}
 
@@ -100,12 +89,11 @@ func (p *PendingPaymentPoller) checkOne(ctx context.Context, pm domain.Payment) 
 	switch mapped {
 	case "confirmed":
 		if err := p.store.ActivateSubscriptionTx(ctx, pm.TBankOrderID, pm.TBankPaymentID, status); err != nil {
-			p.logger.Error("poller: activate subscription", "payment_id", pm.ID, "err", err)
+			observability.Alert(ctx, p.logger, "Оплата: не удалось активировать подписку (поллер)", err, "payment_id", pm.ID)
 		}
 	case "rejected":
 		if err := p.store.RejectPaymentTx(ctx, pm.TBankOrderID, pm.TBankPaymentID, status, ""); err != nil {
-			p.logger.Error("poller: reject payment", "payment_id", pm.ID, "err", err)
+			observability.Alert(ctx, p.logger, "Оплата: не удалось обработать отклонённый платёж (поллер)", err, "payment_id", pm.ID)
 		}
 	}
-	// pending/новые статусы — игнорируем, проверим на следующем тике.
 }

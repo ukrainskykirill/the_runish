@@ -11,16 +11,11 @@ import (
 	"time"
 )
 
-// Renderer кэширует шаблоны, распарсенные один раз на старте.
 type Renderer struct {
 	templates map[string]*template.Template
 	funcMap   template.FuncMap
 }
 
-// New парсит все шаблоны из fsys.
-// layouts — для публичных страниц, adminLayouts — для админки.
-// Страницы с именем, начинающимся на "admin_" (кроме "admin_login"),
-// используют adminLayouts. admin_login — standalone (без layout).
 func New(fsys fs.FS, layouts []string, adminLayouts []string, pages []string) (*Renderer, error) {
 	r := &Renderer{
 		templates: make(map[string]*template.Template),
@@ -50,15 +45,13 @@ func New(fsys fs.FS, layouts []string, adminLayouts []string, pages []string) (*
 		name := pageName(page)
 		tmpl := template.New("").Funcs(r.funcMap)
 
-		// Выбираем layout.
 		useLayouts := layouts
 		if strings.HasPrefix(name, "admin_") && name != "admin_login" {
 			useLayouts = adminLayouts
 		} else if name == "admin_login" {
-			useLayouts = nil // standalone
+			useLayouts = nil
 		}
 
-		// Парсим layout(s), затем страницу.
 		for _, l := range useLayouts {
 			data, err := fs.ReadFile(fsys, l)
 			if err != nil {
@@ -83,7 +76,6 @@ func New(fsys fs.FS, layouts []string, adminLayouts []string, pages []string) (*
 	return r, nil
 }
 
-// Render выполняет шаблон и пишет в w.
 func (r *Renderer) Render(w http.ResponseWriter, name string, data any) error {
 	tmpl, ok := r.templates[name]
 	if !ok {
@@ -93,25 +85,21 @@ func (r *Renderer) Render(w http.ResponseWriter, name string, data any) error {
 	return tmpl.ExecuteTemplate(w, "layout", data)
 }
 
-// pageName извлекает имя страницы из пути (без расширения).
 func pageName(path string) string {
 	base := filepath.Base(path)
 	return base[:len(base)-len(filepath.Ext(base))]
 }
 
-// FormatKop переводит копейки в строку вида "8 000 ₽".
 func FormatKop(kop int64) string {
 	rub := kop / 100
 	return fmt.Sprintf("%d ₽", rub)
 }
 
-// Kop2Rub переводит копейки в рубли для input-полей форм: "8000", "800.5", "80.05".
 func Kop2Rub(kop int64) string {
 	rub := float64(kop) / 100.0
 	return strconv.FormatFloat(rub, 'f', -1, 64)
 }
 
-// Kop2RubPtr — как Kop2Rub, но для *int64: nil возвращает "".
 func Kop2RubPtr(kop *int64) string {
 	if kop == nil {
 		return ""
@@ -119,7 +107,6 @@ func Kop2RubPtr(kop *int64) string {
 	return Kop2Rub(*kop)
 }
 
-// dict — хелпер для создания map в шаблонах.
 func dict(values ...any) map[string]any {
 	m := make(map[string]any, len(values)/2)
 	for i := 0; i < len(values); i += 2 {
@@ -131,17 +118,14 @@ func dict(values ...any) map[string]any {
 	return m
 }
 
-// formatDate форматирует time.Time в "02.01.2006".
 func formatDate(t time.Time) string {
 	return t.Format("02.01.2006")
 }
 
-// formatDateTime форматирует time.Time в "02.01.2006 15:04".
 func formatDateTime(t time.Time) string {
 	return t.Format("02.01.2006 15:04")
 }
 
-// weekdayName переводит ISO-номер дня недели (1=Пн … 7=Вс) в русское название.
 func weekdayName(d int) string {
 	names := [...]string{"Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"}
 	if d < 1 || d > 7 {
@@ -150,7 +134,6 @@ func weekdayName(d int) string {
 	return names[d-1]
 }
 
-// formatDatePtr форматирует *time.Time в "02.01.2006", для nil возвращает "—".
 func formatDatePtr(t *time.Time) string {
 	if t == nil {
 		return "—"

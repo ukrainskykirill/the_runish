@@ -10,14 +10,12 @@ import (
 
 	"therunish/internal/auth"
 	"therunish/internal/domain"
+	"therunish/internal/observability"
 	"therunish/internal/storage"
 )
 
-// loginRequestTTL — сколько nonce для deep-link логина остаётся валидным.
 const loginRequestTTL = 10 * time.Minute
 
-// APIAuthTelegramStart — GET /api/auth/telegram/start.
-// Возвращает имя бота для Login Widget и nonce для deep-link фолбэка.
 func (a *App) APIAuthTelegramStart(w http.ResponseWriter, r *http.Request) {
 	nonce := ""
 	if a.cfg.BotUsername != "" {
@@ -41,8 +39,6 @@ func (a *App) APIAuthTelegramStart(w http.ResponseWriter, r *http.Request) {
 	}{BotUsername: a.cfg.BotUsername, Nonce: nonce})
 }
 
-// APIAuthTelegramCallback — GET /api/auth/telegram/callback.
-// Принимает данные от Telegram Login Widget, создаёт сессию и редиректит на главную.
 func (a *App) APIAuthTelegramCallback(w http.ResponseWriter, r *http.Request) {
 	data, err := auth.ParseTelegramAuth(r.URL.Query())
 	if err != nil {
@@ -65,7 +61,7 @@ func (a *App) APIAuthTelegramCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	saved, err := a.store.UpsertUser(r.Context(), u)
 	if err != nil {
-		a.logger.Error("upsert user", "err", err)
+		observability.Alert(r.Context(), a.logger, "Регистрация не удалась (вход через Telegram на сайте)", err, "tg_id", data.ID)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -80,8 +76,6 @@ func (a *App) APIAuthTelegramCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-// APIAuthTelegramStatus — GET /api/auth/telegram/status?nonce=...
-// Поллинг статуса deep-link логина.
 func (a *App) APIAuthTelegramStatus(w http.ResponseWriter, r *http.Request) {
 	nonce := r.URL.Query().Get("nonce")
 	if nonce == "" {
@@ -101,8 +95,6 @@ func (a *App) APIAuthTelegramStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": status})
 }
 
-// APIAuthTelegramComplete — GET /api/auth/telegram/complete?nonce=...
-// Завершает deep-link логин: создаёт сессию для юзера, подтвердившего nonce через /start в боте.
 func (a *App) APIAuthTelegramComplete(w http.ResponseWriter, r *http.Request) {
 	nonce := r.URL.Query().Get("nonce")
 	if nonce == "" {
@@ -128,13 +120,11 @@ func (a *App) APIAuthTelegramComplete(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// APIAuthLogout — POST /api/auth/logout
 func (a *App) APIAuthLogout(w http.ResponseWriter, r *http.Request) {
 	a.sessions.Destroy(w, r)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// generateNonce генерирует случайный токен для deep-link логина.
 func generateNonce() (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {

@@ -14,10 +14,3 @@ CREATE TABLE trainings (
 );
 
 CREATE INDEX idx_trainings_week ON trainings(weekday, start_time) WHERE is_active;
-
--- Демо-расписание: вторник (две тренировки), четверг, воскресенье.
-INSERT INTO trainings (title, weekday, start_time, place, sort_order) VALUES
-    ('Интервальная тренировка', 2, '07:30', 'Стадион «Локомотив»', 0),
-    ('Беговая ОФП',             2, '19:00', 'Манеж ЦСКА',          1),
-    ('Длительный кросс',        4, '19:30', 'Воробьёвская набережная', 0),
-    ('Воскресный забег',        7, '10:00', 'Парк Горького',       0);

@@ -136,24 +136,23 @@ func DumpEnv(logger *slog.Logger) {
 		"ADMIN_PASSWORD", "SENTRY_DSN", "ALERT_BOT_TOKEN",
 	}
 
-	attrs := make([]any, 0, len(plain)+len(secret)+1)
+	// Всё пишем прямо в текст сообщения (msg), т.к. просмотрщик логов Amvera
+	// показывает только msg, а structured-поля slog не отображает.
 	for _, k := range plain {
 		v := os.Getenv(k)
 		if v == "" {
 			v = "(empty)"
 		}
-		attrs = append(attrs, slog.String(k, v))
+		logger.Info(fmt.Sprintf("ENVDUMP %s=%s", k, v))
 	}
 	for _, k := range secret {
-		attrs = append(attrs, slog.String(k, maskSecret(os.Getenv(k))))
+		logger.Info(fmt.Sprintf("ENVDUMP %s=%s", k, maskSecret(os.Getenv(k))))
 	}
 	if v := os.Getenv("DATABASE_URL"); v == "" {
-		attrs = append(attrs, slog.String("DATABASE_URL", "MISSING"))
+		logger.Info("ENVDUMP DATABASE_URL=MISSING")
 	} else {
-		attrs = append(attrs, slog.String("DATABASE_URL", redactDBURL(v)+fmt.Sprintf(" (len=%d)", len(v))))
+		logger.Info(fmt.Sprintf("ENVDUMP DATABASE_URL=%s (len=%d)", redactDBURL(v), len(v)))
 	}
-
-	logger.Info("env dump (debug)", attrs...)
 }
 
 func maskSecret(v string) string {

@@ -30,7 +30,7 @@ func main() {
 
 	cfg, err := config.Load()
 	if err != nil {
-		boot.Error("config load", "err", err)
+		boot.Error("config load failed: " + err.Error())
 		os.Exit(1)
 	}
 

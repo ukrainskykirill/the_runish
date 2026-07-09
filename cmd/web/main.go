@@ -25,9 +25,12 @@ import (
 )
 
 func main() {
+	boot := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	config.DumpEnv(boot) // TODO: временная отладка — убрать после диагностики
+
 	cfg, err := config.Load()
 	if err != nil {
-		slog.New(slog.NewJSONHandler(os.Stdout, nil)).Error("config load", "err", err)
+		boot.Error("config load", "err", err)
 		os.Exit(1)
 	}
 

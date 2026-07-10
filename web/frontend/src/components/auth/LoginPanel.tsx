@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../api/client';
 import type { TelegramStartResponse } from '../../api/types';
-import { useAuth } from '../../context/AuthContext';
 import { CheckIcon, InfoIcon, TelegramIcon, VKIcon } from '../icons';
 
 interface LoginPanelProps {
@@ -14,7 +13,6 @@ interface LoginPanelProps {
 export function LoginPanel({ reason, onSuccess, showCancel, onCancel }: LoginPanelProps) {
   const [start, setStart] = useState<TelegramStartResponse | null>(null);
   const completingRef = useRef(false);
-  const { vkEnabled } = useAuth();
 
   useEffect(() => {
     api.authTelegramStart().then(setStart).catch(() => setStart({ bot_username: '', nonce: '' }));
@@ -80,12 +78,10 @@ export function LoginPanel({ reason, onSuccess, showCancel, onCancel }: LoginPan
             Вход временно недоступен. Попробуйте позже.
           </div>
         )}
-        {vkEnabled ? (
-          <a className="btn btn-vk btn-block" href="/api/auth/vk/start">
-            <VKIcon className="i i-sm" />
-            Войти через ВКонтакте
-          </a>
-        ) : null}
+        <a className="btn btn-vk btn-block" href="/api/auth/vk/start">
+          <VKIcon className="i i-sm" />
+          Войти через ВКонтакте
+        </a>
         {showCancel ? (
           <div className="modal-actions">
             <button className="btn btn-ghost btn-sm" onClick={onCancel}>

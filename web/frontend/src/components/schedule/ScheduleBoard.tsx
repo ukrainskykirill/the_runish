@@ -144,7 +144,20 @@ export function ScheduleBoard({ trainings: providedTrainings }: ScheduleBoardPro
                     </div>
                     <div className="ev-place">
                       <PinIcon />
-                      {t.place}
+                      {t.place_url ? (
+                        <span
+                          className="ev-place-link"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(t.place_url!, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          {t.place}
+                        </span>
+                      ) : (
+                        t.place
+                      )}
                     </div>
                   </Link>
                 ))

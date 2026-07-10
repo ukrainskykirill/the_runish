@@ -150,7 +150,11 @@ function TrainingCard({ occ, user, busy, onRegister, onCancel }: CardProps) {
         <div className="tcard-title">{occ.title}</div>
         <div className="tcard-meta">
           <span className="tcard-time">{occ.start_time}</span>
-          <span className="tcard-place">{occ.place}</span>
+          {occ.place_url ? (
+            <a className="tcard-place tcard-place-link" href={occ.place_url} target="_blank" rel="noopener noreferrer">{occ.place}</a>
+          ) : (
+            <span className="tcard-place">{occ.place}</span>
+          )}
         </div>
         <div className="tcard-info">
           {occ.cancelled ? (

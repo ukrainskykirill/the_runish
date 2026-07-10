@@ -58,6 +58,7 @@ export interface Training {
   weekday: number; // ISO: 1=Пн … 7=Вс
   start_time: string; // "HH:MM"
   place: string;
+  place_url?: string;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -70,6 +71,7 @@ export interface TrainingOccurrence {
   weekday: number;
   start_time: string; // "HH:MM"
   place: string;
+  place_url?: string;
   session_date: string; // "YYYY-MM-DD"
   capacity?: number;
   registered_count: number;

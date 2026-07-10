@@ -38,6 +38,11 @@
     </div>
 
     <div class="form-group">
+        <label>Ссылка на место</label>
+        <input type="url" name="place_url" value="{{if and .Training .Training.PlaceURL}}{{.Training.PlaceURL}}{{end}}" placeholder="https://yandex.ru/maps/... (необязательно)">
+    </div>
+
+    <div class="form-group">
         <label>Лимит мест</label>
         <input type="number" name="capacity" min="1" value="{{if and .Training .Training.Capacity}}{{.Training.Capacity}}{{end}}" placeholder="напр. 20">
         <small style="color:#6b7280;margin-top:0.2rem;display:block">Максимум участников на одно занятие. Пусто = без лимита.</small>

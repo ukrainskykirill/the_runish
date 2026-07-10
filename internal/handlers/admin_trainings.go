@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"therunish/internal/domain"
 	"therunish/internal/storage"
@@ -186,11 +187,17 @@ func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 		capacity = &c
 	}
 
+	var placeURL *string
+	if pu := strings.TrimSpace(r.FormValue("place_url")); pu != "" {
+		placeURL = &pu
+	}
+
 	return &domain.Training{
 		Title:     title,
 		Weekday:   weekday,
 		StartTime: startTime,
 		Place:     place,
+		PlaceURL:  placeURL,
 		IsActive:  isActive,
 		SortOrder: sortOrder,
 		Capacity:  capacity,

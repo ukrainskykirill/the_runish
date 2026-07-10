@@ -181,6 +181,7 @@ func (s *Store) ListUpcomingSessions(ctx context.Context, userID int64) ([]domai
 				Weekday:     t.Weekday,
 				StartTime:   t.StartTime,
 				Place:       t.Place,
+				PlaceURL:    t.PlaceURL,
 				SessionDate: ds,
 				Capacity:    t.Capacity,
 			}

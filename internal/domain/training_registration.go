@@ -8,6 +8,7 @@ type TrainingOccurrence struct {
 	Weekday          int    `json:"weekday"`
 	StartTime        string `json:"start_time"`
 	Place            string `json:"place"`
+	PlaceURL         *string `json:"place_url,omitempty"`
 	SessionDate      string `json:"session_date"`
 	Capacity         *int   `json:"capacity,omitempty"`
 	RegisteredCount  int    `json:"registered_count"`

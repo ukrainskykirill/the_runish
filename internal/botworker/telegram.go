@@ -159,13 +159,21 @@ func (w *Worker) handleContact(ctx context.Context, u telegram.Update) {
 		return
 	}
 
-	user, err := w.store.GetUserByTelegramID(ctx, from.ID)
+	// UpsertUser (а не GetUserByTelegramID) гарантирует наличие строки пользователя:
+	// если её почему-то нет, создаём, а не выходим молча. Телефон сохраняем всегда —
+	// повторный «поделиться» каждый раз перезаписывает номер.
+	fullName := strings.TrimSpace(from.FirstName + " " + from.LastName)
+	user, err := w.store.UpsertUser(ctx, &domain.User{
+		TelegramID: from.ID,
+		Username:   from.Username,
+		FullName:   fullName,
+	})
 	if err != nil {
-		w.logger.Error("contact: get user", "err", err, "tg_id", from.ID)
+		observability.Alert(ctx, w.logger, "Не удалось сохранить телефон (contact в боте)", err, "tg_id", from.ID)
 		return
 	}
 	if err := w.store.SetUserPhone(ctx, user.ID, phone); err != nil {
-		w.logger.Error("contact: set phone", "err", err, "user_id", user.ID)
+		observability.Alert(ctx, w.logger, "Не удалось сохранить телефон (contact в боте)", err, "user_id", user.ID)
 		return
 	}
 	_ = w.bot.SendMessageRemoveKeyboard(ctx, chatID, w.store.MessageTemplate(ctx, storage.SettingTmplPhoneSaved))

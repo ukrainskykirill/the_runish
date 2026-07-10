@@ -5,6 +5,7 @@ import "time"
 type User struct {
 	ID            int64     `json:"id"`
 	TelegramID    int64     `json:"telegram_id"`
+	VKID          int64     `json:"vk_id"`
 	Username      string    `json:"username"`
 	FullName      string    `json:"full_name"`
 	Phone         string    `json:"phone"`

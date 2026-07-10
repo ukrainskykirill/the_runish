@@ -6,7 +6,7 @@
         {{if .Target.Username}}<span style="color:#6b7280;font-weight:400"> @{{.Target.Username}}</span>{{end}}
     </h2>
     <div style="color:#6b7280;font-size:0.9rem;margin-top:0.25rem">
-        ID {{.Target.ID}} · Telegram ID {{.Target.TelegramID}} · телефон {{if .Target.Phone}}{{.Target.Phone}}{{else}}—{{end}} · в боте {{if .Target.BotDialogOpen}}есть диалог{{else}}нет диалога{{end}}
+        ID {{.Target.ID}} · {{if .Target.TelegramID}}Telegram ID {{.Target.TelegramID}}{{else}}Telegram —{{end}} · {{if .Target.VKID}}VK ID {{.Target.VKID}}{{else}}VK —{{end}} · телефон {{if .Target.Phone}}{{.Target.Phone}}{{else}}—{{end}} · в боте {{if .Target.BotDialogOpen}}есть диалог{{else}}нет диалога{{end}}
     </div>
 </div>
 

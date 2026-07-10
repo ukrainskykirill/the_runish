@@ -311,6 +311,18 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
 .cart-page-lines { max-width: 720px; }
 .phone-gate { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .phone-gate-t { font-size: 14px; color: var(--text-body); text-align: center; }
+.modal-input {
+  width: 100%;
+  font-family: var(--font-text);
+  font-size: 16px;
+  padding: 14px 18px;
+  border: var(--border-w-bold) solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  background: var(--cream-light);
+  color: var(--ink);
+  transition: border-color var(--dur);
+}
+.modal-input:focus { outline: none; border-color: var(--runish-red); }
 
 /* ===== hamburger + mobile menu ===== */
 .hamburger { display: none; width: 46px; height: 46px; border-radius: var(--radius-pill); border: var(--border-w-bold) solid var(--border-soft); background: var(--cream-light); color: var(--ink); place-items: center; transition: all var(--dur); cursor: pointer; }

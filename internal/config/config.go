@@ -22,6 +22,9 @@ type Config struct {
 	BotToken    string
 	BotUsername string
 
+	VKClientID     string
+	VKClientSecret string
+
 	TBankTerminalKey string
 	TBankPassword    string
 	TBankAPIBase     string
@@ -55,6 +58,8 @@ func Load() (Config, error) {
 		DatabaseURL:      os.Getenv("DATABASE_URL"),
 		BotToken:         os.Getenv("BOT_TOKEN"),
 		BotUsername:      os.Getenv("BOT_USERNAME"),
+		VKClientID:       os.Getenv("VK_CLIENT_ID"),
+		VKClientSecret:   os.Getenv("VK_CLIENT_SECRET"),
 		TBankTerminalKey: os.Getenv("TBANK_TERMINAL_KEY"),
 		TBankPassword:    os.Getenv("TBANK_PASSWORD"),
 		TBankAPIBase:     getenv("TBANK_API_BASE", "https://securepay.tinkoff.ru/v2"),
@@ -115,6 +120,14 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
+func (c Config) VKEnabled() bool {
+	return c.VKClientID != "" && c.VKClientSecret != ""
+}
+
+func (c Config) VKRedirectURI() string {
+	return c.BaseURL + "/api/auth/vk/callback"
+}
+
 func getenv(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -126,14 +139,14 @@ func getenv(key, def string) string {
 // Секреты маскируются, у DATABASE_URL прячется только пароль. Убрать после диагностики.
 func DumpEnv(logger *slog.Logger) {
 	plain := []string{
-		"HTTP_ADDR", "BASE_URL", "BOT_USERNAME", "PAYMENT_PROVIDER", "RUN_WORKER",
+		"HTTP_ADDR", "BASE_URL", "BOT_USERNAME", "VK_CLIENT_ID", "PAYMENT_PROVIDER", "RUN_WORKER",
 		"SESSION_TTL", "TBANK_API_BASE", "TBANK_TAXATION", "TBANK_TAX",
 		"TBANK_PAYMENT_OBJECT", "TBANK_PAYMENT_METHOD", "ADMIN_LOGIN",
 		"SENTRY_ENVIRONMENT", "ALERT_CHAT_ID", "LOG_LEVEL",
 	}
 	secret := []string{
 		"TBANK_TERMINAL_KEY", "TBANK_PASSWORD", "BOT_TOKEN", "ADMIN_TOKEN",
-		"ADMIN_PASSWORD", "SENTRY_DSN", "ALERT_BOT_TOKEN",
+		"ADMIN_PASSWORD", "SENTRY_DSN", "ALERT_BOT_TOKEN", "VK_CLIENT_SECRET",
 	}
 
 	// Всё пишем прямо в текст сообщения (msg), т.к. просмотрщик логов Amvera

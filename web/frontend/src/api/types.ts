@@ -96,6 +96,7 @@ export interface TrainingRegistration {
 export interface User {
   id: number;
   telegram_id: number;
+  vk_id: number;
   username: string;
   full_name: string;
   phone: string;
@@ -163,6 +164,7 @@ export interface MeResponse {
   can_book_free_lesson: boolean;
   can_choose_subscription: boolean;
   bot_username: string;
+  vk_enabled: boolean;
 }
 
 export interface CheckoutResponse {

@@ -18,6 +18,7 @@ func (a *App) APIMe(w http.ResponseWriter, r *http.Request) {
 		CanBookFreeLesson     bool                          `json:"can_book_free_lesson"`
 		CanChooseSubscription bool                          `json:"can_choose_subscription"`
 		BotUsername           string                        `json:"bot_username"`
+		VKEnabled             bool                          `json:"vk_enabled"`
 	}{
 		Subscriptions:         []domain.Subscription{},
 		Orders:                []domain.Order{},
@@ -25,6 +26,7 @@ func (a *App) APIMe(w http.ResponseWriter, r *http.Request) {
 		CanBookFreeLesson:     true,
 		CanChooseSubscription: true,
 		BotUsername:           a.cfg.BotUsername,
+		VKEnabled:             a.cfg.VKEnabled(),
 	}
 
 	user := auth.UserFromContext(r.Context())

@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError, formatPrice } from '../api/client';
+import { PhoneModal } from '../components/cart/PhoneModal';
 import { CartIcon, CloseIcon } from '../components/icons';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useUI } from '../context/UIContext';
 
-// Человекочитаемые сообщения под коды ошибок checkout (кроме phone_required —
-// он ведёт в бота). Неизвестный код покажем как есть, чтобы было видно причину.
 const CHECKOUT_ERRORS: Record<string, string> = {
   entry_fee_required: 'Сначала оплатите вступительный взнос — он открывает подписки.',
   already_owned: 'Эта позиция у вас уже есть.',
@@ -19,54 +18,14 @@ const CHECKOUT_ERRORS: Record<string, string> = {
 
 export function CartPage() {
   const { lines, total, remove } = useCart();
-  const { user, botUsername, refresh: refreshAuth } = useAuth();
+  const { user, refresh: refreshAuth } = useAuth();
   const { showToast } = useUI();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
-  // Телефон обязателен для чека: если у юзера его нет — оплату не показываем.
   const needPhone = !!user && !user.phone;
 
-  // Диплинк к боту за телефоном: ?start=phone → бот сразу просит поделиться номером.
-  const phoneLink = botUsername ? `https://t.me/${botUsername}?start=phone` : '#';
-
-  useEffect(() => {
-    if (!needPhone) return;
-    let active = true;
-    const tick = () => {
-      if (active) refreshAuth();
-    };
-    const interval = window.setInterval(tick, 3000);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') tick();
-    };
-    window.addEventListener('focus', onVisible);
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      active = false;
-      window.clearInterval(interval);
-      window.removeEventListener('focus', onVisible);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [needPhone, refreshAuth]);
-
-  // Перебрасываем в бота за номером. Используем синхронную навигацию (не window.open):
-  // попап после await браузер блокирует, а переход по location — нет.
-  function goToBotForPhone() {
-    if (!botUsername) {
-      showToast('Бот временно недоступен — попробуйте позже');
-      return;
-    }
-    showToast('Для оплаты нужен номер телефона — открываем бота…');
-    window.location.href = phoneLink;
-  }
-
-  async function handleCheckout() {
-    if (lines.length === 0) return;
-    // Нет телефона — сразу в бота за номером, без попытки оплаты.
-    if (needPhone) {
-      goToBotForPhone();
-      return;
-    }
+  async function doCheckout() {
     setCheckingOut(true);
     try {
       const { payment_url } = await api.checkout();
@@ -75,8 +34,7 @@ export function CartPage() {
       setCheckingOut(false);
       if (e instanceof ApiError) {
         if (e.code === 'phone_required') {
-          // Бэк сказал, что телефона нет — ведём в бота (без await, чтобы переход сработал).
-          goToBotForPhone();
+          setShowPhoneModal(true);
           return;
         }
         showToast(CHECKOUT_ERRORS[e.code] ?? `Не удалось оформить заказ (${e.code})`);
@@ -84,6 +42,21 @@ export function CartPage() {
         showToast('Не удалось оформить заказ');
       }
     }
+  }
+
+  function handleCheckout() {
+    if (lines.length === 0) return;
+    if (needPhone) {
+      setShowPhoneModal(true);
+      return;
+    }
+    doCheckout();
+  }
+
+  async function handlePhoneSaved() {
+    setShowPhoneModal(false);
+    await refreshAuth();
+    await doCheckout();
   }
 
   return (
@@ -128,36 +101,20 @@ export function CartPage() {
                 <span className="v">{formatPrice(total)}</span>
               </div>
 
-              {needPhone ? (
-                <div className="phone-gate">
-                  <div className="phone-gate-t">
-                    Чтобы оплатить, нужен телефон — он попадёт в чек. Откройте бота в Telegram
-                    и поделитесь номером (или отправьте команду <b>/phone</b>). Номер подхватится
-                    автоматически — можно не обновлять страницу.
-                  </div>
-                  <a
-                    className="btn btn-primary btn-block"
-                    href={phoneLink}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Поделиться номером в Telegram
-                  </a>
-                  <div className="phone-gate-wait">Ждём номер из Telegram…</div>
-                </div>
-              ) : (
-                <button
-                  className="btn btn-primary btn-block"
-                  onClick={handleCheckout}
-                  disabled={checkingOut}
-                >
-                  Оформить и оплатить
-                </button>
-              )}
+              <button
+                className="btn btn-primary btn-block"
+                onClick={handleCheckout}
+                disabled={checkingOut}
+              >
+                Оформить и оплатить
+              </button>
             </div>
           )}
         </div>
       </section>
+      {showPhoneModal ? (
+        <PhoneModal onSuccess={handlePhoneSaved} onClose={() => setShowPhoneModal(false)} />
+      ) : null}
     </>
   );
 }

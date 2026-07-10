@@ -19,6 +19,7 @@ func (a *App) Routes() http.Handler {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	mux.HandleFunc("GET /api/me", a.mw.LoadUser(http.HandlerFunc(a.APIMe)).ServeHTTP)
+	mux.HandleFunc("POST /api/me/phone", a.mw.RequireUser(http.HandlerFunc(a.APIMeSetPhone)).ServeHTTP)
 	mux.HandleFunc("GET /api/home", a.mw.LoadUser(http.HandlerFunc(a.APIHome)).ServeHTTP)
 	mux.HandleFunc("GET /api/catalog", a.mw.LoadUser(http.HandlerFunc(a.APICatalog)).ServeHTTP)
 	mux.HandleFunc("GET /api/news", a.APINews)
@@ -38,6 +39,8 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /api/auth/telegram/callback", a.APIAuthTelegramCallback)
 	mux.HandleFunc("GET /api/auth/telegram/status", a.APIAuthTelegramStatus)
 	mux.HandleFunc("GET /api/auth/telegram/complete", a.APIAuthTelegramComplete)
+	mux.HandleFunc("GET /api/auth/vk/start", a.APIAuthVKStart)
+	mux.HandleFunc("GET /api/auth/vk/callback", a.APIAuthVKCallback)
 	mux.HandleFunc("POST /api/auth/logout", a.APIAuthLogout)
 
 	mux.HandleFunc("POST /payment/webhook", a.PaymentWebhook)

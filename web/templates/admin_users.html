@@ -28,7 +28,7 @@
             <td>{{.FullName}}{{if .IsAdmin}} <span class="status-badge status-confirmed">admin</span>{{end}}</td>
             <td>{{if .Username}}@{{.Username}}{{else}}—{{end}}</td>
             <td>{{if .Phone}}{{.Phone}}{{else}}—{{end}}</td>
-            <td>{{.TelegramID}}</td>
+            <td>{{if .TelegramID}}{{.TelegramID}}{{else if .VKID}}ВК {{.VKID}}{{else}}—{{end}}</td>
             <td>{{if .BotDialogOpen}}✅{{else}}❌{{end}}</td>
             <td>
                 {{if .SubscriptionExpiresAt}}

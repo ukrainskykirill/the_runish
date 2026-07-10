@@ -10,12 +10,12 @@ import (
 	"therunish/internal/domain"
 )
 
-const userCols = `id, telegram_id, username, full_name, phone, bot_dialog_open, is_admin, entry_fee_paid, created_at`
+const userCols = `id, COALESCE(telegram_id, 0) AS telegram_id, username, full_name, phone, bot_dialog_open, is_admin, entry_fee_paid, created_at, COALESCE(vk_id, 0) AS vk_id`
 
 func scanUser(sc rowScanner, u *domain.User) error {
 	return sc.Scan(
 		&u.ID, &u.TelegramID, &u.Username, &u.FullName, &u.Phone,
-		&u.BotDialogOpen, &u.IsAdmin, &u.EntryFeePaid, &u.CreatedAt,
+		&u.BotDialogOpen, &u.IsAdmin, &u.EntryFeePaid, &u.CreatedAt, &u.VKID,
 	)
 }
 
@@ -23,7 +23,7 @@ func (s *Store) UpsertUser(ctx context.Context, u *domain.User) (domain.User, er
 	const q = `
 		WITH up AS (
 			INSERT INTO users (telegram_id, username, full_name, phone)
-			VALUES ($1, $2, $3, $4)
+			VALUES (NULLIF($1, 0), $2, $3, $4)
 			ON CONFLICT (telegram_id) DO UPDATE
 				SET username  = EXCLUDED.username,
 				    full_name = EXCLUDED.full_name,
@@ -70,6 +70,41 @@ func (s *Store) GetUserByTelegramID(ctx context.Context, tgID int64) (domain.Use
 	return u, nil
 }
 
+func (s *Store) GetUserByVKID(ctx context.Context, vkID int64) (domain.User, error) {
+	q := `SELECT ` + userCols + ` FROM users WHERE vk_id = $1`
+	var u domain.User
+	err := scanUser(s.db.QueryRowContext(ctx, q, vkID), &u)
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.User{}, ErrNotFound
+	}
+	if err != nil {
+		return domain.User{}, fmt.Errorf("get user by vk id: %w", err)
+	}
+	return u, nil
+}
+
+func (s *Store) UpsertVKUser(ctx context.Context, u *domain.User) (domain.User, error) {
+	const q = `
+		WITH up AS (
+			INSERT INTO users (vk_id, username, full_name)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (vk_id) DO UPDATE
+				SET username  = EXCLUDED.username,
+				    full_name = EXCLUDED.full_name
+			RETURNING ` + userCols + `, (xmax = 0) AS inserted
+		), seed_survey AS (
+			INSERT INTO survey_responses (user_id, status)
+			SELECT id, 'pending' FROM up WHERE inserted
+			ON CONFLICT (user_id) DO NOTHING
+		)
+		SELECT ` + userCols + ` FROM up`
+	var result domain.User
+	if err := scanUser(s.db.QueryRowContext(ctx, q, u.VKID, u.Username, u.FullName), &result); err != nil {
+		return domain.User{}, fmt.Errorf("upsert vk user: %w", err)
+	}
+	return result, nil
+}
+
 func (s *Store) SetEntryFeePaid(ctx context.Context, userID int64, paid bool) error {
 	const q = `UPDATE users SET entry_fee_paid = $2 WHERE id = $1`
 	if _, err := s.db.ExecContext(ctx, q, userID, paid); err != nil {
@@ -112,7 +147,7 @@ type UserListItem struct {
 
 func (s *Store) ListUsers(ctx context.Context, search string) ([]UserListItem, error) {
 	const q = `
-		SELECT u.id, u.telegram_id, u.username, u.full_name, u.phone, u.bot_dialog_open, u.is_admin, u.entry_fee_paid, u.created_at,
+		SELECT u.id, COALESCE(u.telegram_id, 0), u.username, u.full_name, u.phone, u.bot_dialog_open, u.is_admin, u.entry_fee_paid, u.created_at, COALESCE(u.vk_id, 0),
 		       sub.title, sub.expires_at
 		FROM users u
 		LEFT JOIN (
@@ -138,7 +173,7 @@ func (s *Store) ListUsers(ctx context.Context, search string) ([]UserListItem, e
 		var subExpiresAt sql.NullTime
 		if err := rows.Scan(
 			&u.ID, &u.TelegramID, &u.Username, &u.FullName,
-			&u.Phone, &u.BotDialogOpen, &u.IsAdmin, &u.EntryFeePaid, &u.CreatedAt,
+			&u.Phone, &u.BotDialogOpen, &u.IsAdmin, &u.EntryFeePaid, &u.CreatedAt, &u.VKID,
 			&subTitle, &subExpiresAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)

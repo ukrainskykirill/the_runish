@@ -61,6 +61,11 @@ async function cachedRequest<T>(path: string, signal?: AbortSignal, ttlMs = 60_0
 
 export const api = {
   me: (signal?: AbortSignal) => request<MeResponse>('/me', { signal }),
+  setPhone: (phone: string) =>
+    request<{ phone: string }>('/me/phone', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    }),
   home: (signal?: AbortSignal) => request<HomeResponse>('/home', { signal }),
   catalog: (signal?: AbortSignal) => request<CatalogResponse>('/catalog', { signal }),
   news: (signal?: AbortSignal) => cachedRequest<{ news: NewsItem[] }>('/news', signal),

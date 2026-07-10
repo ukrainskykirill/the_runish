@@ -10,6 +10,7 @@ interface AuthContextValue {
   canBookFreeLesson: boolean;
   canChooseSubscription: boolean;
   botUsername: string;
+  vkEnabled: boolean;
   loading: boolean;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [canBookFreeLesson, setCanBookFreeLesson] = useState(true);
   const [canChooseSubscription, setCanChooseSubscription] = useState(true);
   const [botUsername, setBotUsername] = useState('');
+  const [vkEnabled, setVkEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -37,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCanBookFreeLesson(data.can_book_free_lesson);
       setCanChooseSubscription(data.can_choose_subscription);
       setBotUsername(data.bot_username);
+      setVkEnabled(data.vk_enabled);
     } finally {
       setLoading(false);
     }
@@ -66,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         canBookFreeLesson,
         canChooseSubscription,
         botUsername,
+        vkEnabled,
         loading,
         refresh,
         logout,

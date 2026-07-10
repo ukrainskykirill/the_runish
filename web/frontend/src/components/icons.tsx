@@ -38,6 +38,15 @@ export function TelegramIcon(props: IconProps) {
   );
 }
 
+export function VKIcon(props: IconProps) {
+  const { className = 'i', ...rest } = props;
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" stroke="none" {...rest}>
+      <path d="M13.16 17.24c-5.28 0-8.63-3.62-8.77-9.64h2.7c.09 4.42 2.1 6.3 3.66 6.68V7.6h2.5v3.77c1.5-.16 3.08-1.9 3.6-3.77h2.48a7 7 0 0 1-3.2 4.62 7.24 7.24 0 0 1 3.74 4.62h-2.72c-.5-1.65-1.9-2.93-3.9-3.12v3.12z" />
+    </svg>
+  );
+}
+
 export function ChevronDownIcon(props: IconProps) {
   return base(props, <path d="m6 9 6 6 6-6" />);
 }

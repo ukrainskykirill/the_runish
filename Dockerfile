@@ -21,9 +21,11 @@ RUN go mod download
 # Копируем исходники.
 COPY . .
 
-# Собираем два бинарника.
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/therunish-web ./cmd/web
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/therunish-worker ./cmd/worker
+# Собираем два бинарника. В buildinfo.Time зашиваем время сборки образа —
+# видно в /healthz и в стартовом логе, чтобы понимать, какой образ реально запущен.
+RUN BT="$(date -u +%Y-%m-%dT%H-%M-%SZ)" && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X therunish/internal/buildinfo.Time=$BT" -o /bin/therunish-web ./cmd/web && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X therunish/internal/buildinfo.Time=$BT" -o /bin/therunish-worker ./cmd/worker
 
 # ---- Runtime stage ----
 FROM alpine:3.20

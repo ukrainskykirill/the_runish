@@ -13,6 +13,7 @@ import (
 
 	"therunish/internal/auth"
 	"therunish/internal/botworker"
+	"therunish/internal/buildinfo"
 	"therunish/internal/config"
 	"therunish/internal/handlers"
 	"therunish/internal/observability"
@@ -26,6 +27,7 @@ import (
 
 func main() {
 	boot := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	boot.Info("BUILD " + buildinfo.Time)
 	config.DumpEnv(boot) // TODO: временная отладка — убрать после диагностики
 
 	cfg, err := config.Load()

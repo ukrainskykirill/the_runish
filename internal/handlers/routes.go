@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"therunish/internal/auth"
+	"therunish/internal/buildinfo"
 )
 
 func (a *App) serveSPA(w http.ResponseWriter, r *http.Request) {
@@ -104,7 +105,7 @@ func (a *App) Routes() http.Handler {
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK build=" + buildinfo.Time))
 	})
 
 	fileServer := http.FileServer(http.Dir(frontendDist))

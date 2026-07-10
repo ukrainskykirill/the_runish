@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api, ApiError } from '../../api/client';
 import { CloseIcon, InfoIcon } from '../icons';
 
@@ -30,7 +31,7 @@ export function PhoneModal({ onSuccess, onClose }: PhoneModalProps) {
     }
   }
 
-  return (
+  return createPortal(
     <div
       className="modal-bg"
       onClick={(e) => {
@@ -67,6 +68,7 @@ export function PhoneModal({ onSuccess, onClose }: PhoneModalProps) {
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

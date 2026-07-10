@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useUI } from '../../context/UIContext';
 import { CartIcon, CloseIcon } from '../icons';
+import { PhoneModal } from './PhoneModal';
 
 function plural(n: number): string {
   const a = n % 10;
@@ -14,7 +15,6 @@ function plural(n: number): string {
   return 'позиций';
 }
 
-// Человекочитаемые сообщения под коды ошибок checkout (phone_required ведёт в бота).
 const CHECKOUT_ERRORS: Record<string, string> = {
   entry_fee_required: 'Сначала оплатите вступительный взнос — он открывает подписки.',
   already_owned: 'Эта позиция у вас уже есть.',
@@ -31,30 +31,14 @@ interface CartDropdownProps {
 
 export function CartDropdown({ open, onClose }: CartDropdownProps) {
   const { lines, total, count, remove } = useCart();
-  const { user, botUsername } = useAuth();
+  const { user, refresh: refreshAuth } = useAuth();
   const { showToast } = useUI();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   const needPhone = !!user && !user.phone;
-  const phoneLink = botUsername ? `https://t.me/${botUsername}?start=phone` : '#';
 
-  // Перебрасываем в бота за номером (синхронная навигация — не блокируется попап-блокером).
-  function goToBotForPhone() {
-    if (!botUsername) {
-      showToast('Бот временно недоступен — попробуйте позже');
-      return;
-    }
-    showToast('Для оплаты нужен номер телефона — открываем бота…');
-    window.location.href = phoneLink;
-  }
-
-  async function handleCheckout() {
-    if (lines.length === 0) return;
-    // Нет телефона — сразу в бота за номером.
-    if (needPhone) {
-      goToBotForPhone();
-      return;
-    }
+  async function doCheckout() {
     setCheckingOut(true);
     try {
       const { payment_url } = await api.checkout();
@@ -63,7 +47,7 @@ export function CartDropdown({ open, onClose }: CartDropdownProps) {
       setCheckingOut(false);
       if (e instanceof ApiError) {
         if (e.code === 'phone_required') {
-          goToBotForPhone();
+          setShowPhoneModal(true);
           return;
         }
         showToast(CHECKOUT_ERRORS[e.code] ?? `Не удалось оформить заказ (${e.code})`);
@@ -71,6 +55,21 @@ export function CartDropdown({ open, onClose }: CartDropdownProps) {
         showToast('Не удалось оформить заказ');
       }
     }
+  }
+
+  function handleCheckout() {
+    if (lines.length === 0) return;
+    if (needPhone) {
+      setShowPhoneModal(true);
+      return;
+    }
+    doCheckout();
+  }
+
+  async function handlePhoneSaved() {
+    setShowPhoneModal(false);
+    await refreshAuth();
+    await doCheckout();
   }
 
   return (
@@ -117,6 +116,9 @@ export function CartDropdown({ open, onClose }: CartDropdownProps) {
             Перейти к пробежкам
           </Link>
         </div>
+      ) : null}
+      {showPhoneModal ? (
+        <PhoneModal onSuccess={handlePhoneSaved} onClose={() => setShowPhoneModal(false)} />
       ) : null}
     </div>
   );

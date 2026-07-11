@@ -95,23 +95,30 @@ func (w *Worker) handleTelegramUpdate(ctx context.Context, u telegram.Update) {
 		return
 	}
 
-	var reply string
 	if nonce != "" {
-		if err := w.store.ConfirmLoginRequest(ctx, nonce, user.ID); err != nil && !errors.Is(err, storage.ErrNotFound) {
-			w.logger.Error("confirm login request", "err", err, "nonce", nonce)
+		err := w.store.ConfirmLoginRequest(ctx, nonce, user.ID)
+		if errors.Is(err, storage.ErrNotFound) {
+			return
 		}
-		reply = renderTemplate(w.store.MessageTemplate(ctx, storage.SettingTmplLoginDone), map[string]string{"site": w.cfg.BaseURL})
-	} else {
-		reply = renderTemplate(w.store.MessageTemplate(ctx, storage.SettingTmplWelcome), map[string]string{"site": w.cfg.BaseURL})
+		if err != nil {
+			w.logger.Error("confirm login request", "err", err, "nonce", nonce)
+			return
+		}
+		reply := renderTemplate(w.store.MessageTemplate(ctx, storage.SettingTmplLoginDone), map[string]string{"site": w.cfg.BaseURL})
+		if err := w.bot.SendMessage(ctx, u.Message.Chat.ID, reply); err != nil {
+			w.logger.Warn("send telegram reply", "err", err, "chat_id", u.Message.Chat.ID)
+		}
+		w.logger.Info("telegram login via bot", "user_id", user.ID, "tg_id", user.TelegramID)
+		return
 	}
 
+	reply := renderTemplate(w.store.MessageTemplate(ctx, storage.SettingTmplWelcome), map[string]string{"site": w.cfg.BaseURL})
 	if err := w.bot.SendMessage(ctx, u.Message.Chat.ID, reply); err != nil {
 		w.logger.Warn("send telegram reply", "err", err, "chat_id", u.Message.Chat.ID)
 	}
-
 	w.logger.Info("telegram /start handled", "user_id", user.ID, "tg_id", user.TelegramID)
 
-	if user.Phone == "" && nonce == "" {
+	if user.Phone == "" {
 		w.askForPhone(ctx, user, u.Message.Chat.ID)
 	}
 }

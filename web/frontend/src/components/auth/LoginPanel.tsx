@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../api/client';
 import type { TelegramStartResponse } from '../../api/types';
-import { CheckIcon, InfoIcon, TelegramIcon, VKIcon } from '../icons';
+import { CheckIcon, InfoIcon, TelegramIcon } from '../icons';
 
 interface LoginPanelProps {
   reason?: string | null;
@@ -78,10 +78,6 @@ export function LoginPanel({ reason, onSuccess, showCancel, onCancel }: LoginPan
             Вход временно недоступен. Попробуйте позже.
           </div>
         )}
-        <a className="btn btn-vk btn-block" href="/api/auth/vk/start">
-          <VKIcon className="i i-sm" />
-          Войти через ВКонтакте
-        </a>
         {showCancel ? (
           <div className="modal-actions">
             <button className="btn btn-ghost btn-sm" onClick={onCancel}>

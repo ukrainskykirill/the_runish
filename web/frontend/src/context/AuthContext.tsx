@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
-import type { Order, Subscription, TrainingRegistration, User } from '../api/types';
+import type { Order, Subscription, SurveyStatus, TrainingRegistration, User } from '../api/types';
 
 interface AuthContextValue {
   user: User | null;
@@ -11,6 +11,7 @@ interface AuthContextValue {
   canChooseSubscription: boolean;
   botUsername: string;
   vkEnabled: boolean;
+  surveyStatus: SurveyStatus;
   loading: boolean;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [canChooseSubscription, setCanChooseSubscription] = useState(true);
   const [botUsername, setBotUsername] = useState('');
   const [vkEnabled, setVkEnabled] = useState(false);
+  const [surveyStatus, setSurveyStatus] = useState<SurveyStatus>('pending');
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -40,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCanChooseSubscription(data.can_choose_subscription);
       setBotUsername(data.bot_username);
       setVkEnabled(data.vk_enabled);
+      setSurveyStatus(data.survey_status);
     } finally {
       setLoading(false);
     }
@@ -57,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTrainingRegistrations([]);
     setCanBookFreeLesson(true);
     setCanChooseSubscription(true);
+    setSurveyStatus('pending');
   }, []);
 
   return (
@@ -70,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         canChooseSubscription,
         botUsername,
         vkEnabled,
+        surveyStatus,
         loading,
         refresh,
         logout,

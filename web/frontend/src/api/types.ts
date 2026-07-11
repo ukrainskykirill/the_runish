@@ -165,6 +165,7 @@ export interface MeResponse {
   can_choose_subscription: boolean;
   bot_username: string;
   vk_enabled: boolean;
+  survey_status: SurveyStatus;
 }
 
 export interface CheckoutResponse {

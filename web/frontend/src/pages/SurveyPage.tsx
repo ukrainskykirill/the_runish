@@ -86,6 +86,7 @@ function SurveyShell({ children }: { children: React.ReactNode }) {
 
 function SurveyFlow({ data }: { data: SurveyResponse }) {
   const { showToast } = useUI();
+  const { refresh: refreshAuth } = useAuth();
   const [answers, setAnswers] = useState<SurveyAnswers>(data.answers ?? {});
   const [phase, setPhase] = useState<Phase>(data.status === 'completed' ? 'done' : 'welcome');
   const [stepIndex, setStepIndex] = useState(0);
@@ -117,6 +118,7 @@ function SurveyFlow({ data }: { data: SurveyResponse }) {
     try {
       await api.surveySubmit(answers);
       setPhase('done');
+      void refreshAuth();
       showToast('Спасибо! Анкета сохранена');
     } catch {
       showToast('Не удалось сохранить анкету');

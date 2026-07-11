@@ -70,7 +70,6 @@ func (w *Worker) handleTelegramUpdate(ctx context.Context, u telegram.Update) {
 	}
 
 	if !strings.HasPrefix(text, "/start") {
-		w.handleSurveyText(ctx, u.Message.From.ID, u.Message.Chat.ID, text)
 		return
 	}
 	nonce := strings.TrimSpace(strings.TrimPrefix(text, "/start"))
@@ -111,8 +110,6 @@ func (w *Worker) handleTelegramUpdate(ctx context.Context, u telegram.Update) {
 	}
 
 	w.logger.Info("telegram /start handled", "user_id", user.ID, "tg_id", user.TelegramID)
-
-	w.maybeStartOrContinueSurvey(ctx, user.ID, u.Message.Chat.ID)
 
 	if user.Phone == "" {
 		w.askForPhone(ctx, user, u.Message.Chat.ID)

@@ -19,6 +19,7 @@ func (a *App) APIMe(w http.ResponseWriter, r *http.Request) {
 		CanChooseSubscription bool                          `json:"can_choose_subscription"`
 		BotUsername           string                        `json:"bot_username"`
 		VKEnabled             bool                          `json:"vk_enabled"`
+		SurveyStatus          string                        `json:"survey_status"`
 	}{
 		Subscriptions:         []domain.Subscription{},
 		Orders:                []domain.Order{},
@@ -67,6 +68,13 @@ func (a *App) APIMe(w http.ResponseWriter, r *http.Request) {
 			hasSubscriptions = true
 		}
 		resp.CanBookFreeLesson = !hasPayments && !user.EntryFeePaid && !hasSubscriptions
+
+		resp.SurveyStatus = string(domain.SurveyPending)
+		if sv, err := a.store.GetSurvey(r.Context(), user.ID); err == nil {
+			resp.SurveyStatus = string(sv.Status)
+		} else if !errors.Is(err, storage.ErrNotFound) {
+			a.logger.Error("me: get survey status", "err", err)
+		}
 	}
 
 	writeJSON(w, http.StatusOK, resp)

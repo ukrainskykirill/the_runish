@@ -109,6 +109,49 @@ func (a *App) APISurveySubmit(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": string(domain.SurveyCompleted)})
 }
 
+func (a *App) APISurveyProgress(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFromContext(r.Context())
+	if user == nil {
+		writeJSONError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var body struct {
+		Answers map[string]any `json:"answers"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid_body")
+		return
+	}
+
+	questions, err := a.store.ListSurveyQuestions(r.Context(), true)
+	if err != nil {
+		a.logger.Error("api survey progress: list questions", "err", err)
+		writeJSONError(w, http.StatusInternalServerError, "internal_error")
+		return
+	}
+
+	clean := map[string]any{}
+	branch := ""
+	for _, q := range questions {
+		v, ok := body.Answers[q.Key]
+		if !ok {
+			continue
+		}
+		clean[q.Key] = normalizeAnswer(q, v)
+		if q.IsSelector {
+			branch = branchForLabel(q, clean[q.Key])
+		}
+	}
+
+	if err := a.store.SaveSurvey(r.Context(), user.ID, domain.SurveyInProgress, branch, "", clean, nil); err != nil {
+		a.logger.Error("api survey progress: save", "err", err)
+		writeJSONError(w, http.StatusInternalServerError, "internal_error")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": string(domain.SurveyInProgress)})
+}
+
 func normalizeAnswer(q domain.SurveyQuestion, v any) any {
 	if q.Kind == domain.SurveyKindMulti {
 		out := []string{}

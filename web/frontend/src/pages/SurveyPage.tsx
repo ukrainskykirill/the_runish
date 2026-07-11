@@ -32,6 +32,14 @@ function isAnswered(q: SurveyQuestion, value: string | string[] | undefined): bo
   return typeof value === 'string' && value.trim() !== '';
 }
 
+function firstUnansweredIndex(questions: SurveyQuestion[], answers: SurveyAnswers): number {
+  const seq = buildSequence(questions, answers);
+  for (let i = 0; i < seq.length; i++) {
+    if (!isAnswered(seq[i], answers[seq[i].key])) return i;
+  }
+  return seq.length > 0 ? seq.length - 1 : 0;
+}
+
 function formatValue(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value.join(', ');
   return value ?? '—';
@@ -87,14 +95,29 @@ function SurveyShell({ children }: { children: React.ReactNode }) {
 function SurveyFlow({ data }: { data: SurveyResponse }) {
   const { showToast } = useUI();
   const { refresh: refreshAuth } = useAuth();
-  const [answers, setAnswers] = useState<SurveyAnswers>(data.answers ?? {});
-  const [phase, setPhase] = useState<Phase>(data.status === 'completed' ? 'done' : 'welcome');
-  const [stepIndex, setStepIndex] = useState(0);
+  const initialCompleted = data.status === 'completed';
+  const initialAnswers = data.answers ?? {};
+  const [answers, setAnswers] = useState<SurveyAnswers>(initialAnswers);
+  const [phase, setPhase] = useState<Phase>(
+    initialCompleted ? 'done' : data.status === 'in_progress' ? 'questions' : 'welcome',
+  );
+  const [stepIndex, setStepIndex] = useState(() =>
+    data.status === 'in_progress' ? firstUnansweredIndex(data.questions, initialAnswers) : 0,
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const sequence = useMemo(() => buildSequence(data.questions, answers), [data.questions, answers]);
   const current = sequence[stepIndex];
   const total = sequence.length;
+
+  useEffect(() => {
+    if (initialCompleted || phase !== 'questions') return;
+    if (Object.keys(answers).length === 0) return;
+    const t = setTimeout(() => {
+      void api.surveyProgress(answers).catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [answers, phase, initialCompleted]);
 
   function setAnswer(key: string, value: string | string[]) {
     setAnswers((prev) => ({ ...prev, [key]: value }));

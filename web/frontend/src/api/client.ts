@@ -105,6 +105,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ answers }),
     }),
+  surveyProgress: (answers: SurveyAnswers) =>
+    request<{ status: string }>('/survey/progress', {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    }),
 
   authTelegramStart: () => request<TelegramStartResponse>('/auth/telegram/start'),
   authTelegramStatus: (nonce: string) =>

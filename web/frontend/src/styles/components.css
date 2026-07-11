@@ -258,14 +258,14 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
 .modal-top .tgring { position: relative; width: 66px; height: 66px; border-radius: 50%; background: var(--cream-light); color: var(--runish-red); display: grid; place-items: center; margin: 0 auto 14px; }
 .modal-top h3 { position: relative; font-family: var(--font-display); text-transform: uppercase; font-weight: 400; font-size: 30px; }
 .modal-top p { position: relative; color: rgba(244,236,221,0.9); font-size: 14px; margin: 6px 0 0; }
-.modal-body { padding: 24px; }
-.modal-note { display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: rgba(224,51,10,0.08); color: var(--runish-red-ink); font-size: 13px; margin-bottom: 18px; }
+.modal-body { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.modal-note { display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: rgba(224,51,10,0.08); color: var(--runish-red-ink); font-size: 13px; }
 .modal-note svg { flex: none; margin-top: 1px; }
 .tg-user { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: var(--radius-md); border: var(--border-w) solid var(--border-soft); background: var(--cream); margin-bottom: 18px; }
 .tg-user .av { width: 46px; height: 46px; border-radius: 50%; background: var(--runish-red); color: var(--cream-light); display: grid; place-items: center; font-family: var(--font-display); font-size: 20px; }
 .tg-user .nm { font-weight: 700; }
 .tg-user .hd { color: var(--text-faint); font-size: 13px; }
-.modal-perm { font-size: 13px; color: var(--text-body); margin-bottom: 20px; display: grid; gap: 8px; }
+.modal-perm { font-size: 13px; color: var(--text-body); display: grid; gap: 8px; }
 .modal-perm div { display: flex; gap: 9px; align-items: flex-start; }
 .modal-perm svg { color: var(--runish-red); flex: none; margin-top: 1px; }
 .modal-actions { display: flex; gap: 12px; flex-direction: column; }

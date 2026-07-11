@@ -36,6 +36,7 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("POST /api/checkout", a.mw.RequireUser(http.HandlerFunc(a.APICheckout)).ServeHTTP)
 	mux.HandleFunc("GET /api/survey", a.mw.RequireUser(http.HandlerFunc(a.APISurveyGet)).ServeHTTP)
 	mux.HandleFunc("POST /api/survey", a.mw.RequireUser(http.HandlerFunc(a.APISurveySubmit)).ServeHTTP)
+	mux.HandleFunc("POST /api/survey/progress", a.mw.RequireUser(http.HandlerFunc(a.APISurveyProgress)).ServeHTTP)
 	mux.HandleFunc("GET /api/auth/telegram/start", a.APIAuthTelegramStart)
 	mux.HandleFunc("GET /api/auth/telegram/callback", a.APIAuthTelegramCallback)
 	mux.HandleFunc("GET /api/auth/telegram/status", a.APIAuthTelegramStatus)

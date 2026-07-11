@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Training } from '../../api/types';
@@ -9,14 +10,25 @@ const MONTHS_GEN = [
   'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
   'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
 ];
+const MONTHS_NOM = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+];
 
-/** ISO-номер дня недели (1=Пн … 7=Вс) для JS Date. */
 function isoWeekday(d: Date): number {
   return ((d.getDay() + 6) % 7) + 1;
 }
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
+}
+
+function sameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function ClockIcon() {
@@ -37,13 +49,15 @@ function PinIcon() {
   );
 }
 
-// ScheduleBoard — доска недельного расписания (без секции/заголовка).
-// Переиспользуется и в секции на главной, и на отдельной странице /schedule.
+type CalView = 'week' | 'month';
+
 interface ScheduleBoardProps {
   trainings?: Training[];
+  enableViews?: boolean;
 }
 
-export function ScheduleBoard({ trainings: providedTrainings }: ScheduleBoardProps) {
+export function ScheduleBoard({ trainings: providedTrainings, enableViews = false }: ScheduleBoardProps) {
+  const [view, setView] = useState<CalView>('week');
   const shouldFetch = providedTrainings === undefined;
   const { data, loading, error } = useAsync(
     () => (shouldFetch ? api.schedule() : Promise.resolve({ trainings: providedTrainings })),
@@ -51,14 +65,12 @@ export function ScheduleBoard({ trainings: providedTrainings }: ScheduleBoardPro
   );
   const trainings = data?.trainings ?? providedTrainings ?? [];
 
-  // «Сегодня» и текущая неделя (Пн–Вс) — по часам браузера.
   const today = new Date();
   const todayIso = isoWeekday(today);
   const monday = new Date(today);
   monday.setHours(0, 0, 0, 0);
   monday.setDate(today.getDate() - (todayIso - 1));
 
-  // Тренировки по дню недели (внутри дня уже отсортированы по времени с бэка).
   const byDay = new Map<number, Training[]>();
   for (const t of trainings) {
     const arr = byDay.get(t.weekday);
@@ -80,25 +92,67 @@ export function ScheduleBoard({ trainings: providedTrainings }: ScheduleBoardPro
   });
 
   const sunday = days[6].date;
-  const range =
+  const weekRange =
     monday.getMonth() === sunday.getMonth()
       ? `${monday.getDate()} — ${sunday.getDate()} ${MONTHS_GEN[sunday.getMonth()]}`
       : `${monday.getDate()} ${MONTHS_GEN[monday.getMonth()]} — ${sunday.getDate()} ${MONTHS_GEN[sunday.getMonth()]}`;
+
+  const mYear = today.getFullYear();
+  const mMonth = today.getMonth();
+  const monthFirst = new Date(mYear, mMonth, 1);
+  const gridStart = new Date(monthFirst);
+  gridStart.setDate(monthFirst.getDate() - (isoWeekday(monthFirst) - 1));
+  const daysInMonth = new Date(mYear, mMonth + 1, 0).getDate();
+  const cellsCount = Math.ceil((isoWeekday(monthFirst) - 1 + daysInMonth) / 7) * 7;
+  const monthCells = Array.from({ length: cellsCount }, (_, i) => {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + i);
+    const wd = isoWeekday(date);
+    return {
+      date,
+      wd,
+      inMonth: date.getMonth() === mMonth,
+      isToday: sameDay(date, today),
+      items: byDay.get(wd) ?? [],
+    };
+  });
+
+  const headTitle = view === 'month' ? `${MONTHS_NOM[mMonth]} ${mYear}` : 'Эта неделя';
+  const headRange = view === 'month' ? '' : weekRange;
 
   return (
     <div className="cal-board">
       <div className="cal-strip speedlines" />
       <div className="cal-board-head">
         <div className="wk">
-          <span className="t">Эта неделя</span>
-          <span className="r">{range}</span>
+          <span className="t">{headTitle}</span>
+          {headRange ? <span className="r">{headRange}</span> : null}
         </div>
-        <div className="cal-legend">
-          <span className="lg">
-            <span className="sw red" />
-            Тренировка
-          </span>
-        </div>
+        {enableViews ? (
+          <div className="cal-views" role="tablist" aria-label="Вид календаря">
+            <button
+              type="button"
+              className={'cal-view-btn' + (view === 'week' ? ' active' : '')}
+              onClick={() => setView('week')}
+            >
+              Неделя
+            </button>
+            <button
+              type="button"
+              className={'cal-view-btn' + (view === 'month' ? ' active' : '')}
+              onClick={() => setView('month')}
+            >
+              Месяц
+            </button>
+          </div>
+        ) : (
+          <div className="cal-legend">
+            <span className="lg">
+              <span className="sw red" />
+              Тренировка
+            </span>
+          </div>
+        )}
       </div>
 
       {shouldFetch && loading ? (
@@ -109,6 +163,35 @@ export function ScheduleBoard({ trainings: providedTrainings }: ScheduleBoardPro
         </div>
       ) : shouldFetch && error ? (
         <ErrorState message="Не удалось загрузить расписание" />
+      ) : view === 'month' ? (
+        <div className="cal-month">
+          {DOW.map((d, i) => (
+            <div key={`h${i}`} className={'cal-mhead' + (i >= 5 ? ' weekend' : '')}>
+              {d}
+            </div>
+          ))}
+          {monthCells.map((c, i) => (
+            <div
+              key={i}
+              className={
+                'cal-mday' +
+                (c.inMonth ? '' : ' out') +
+                (c.isToday ? ' today' : '') +
+                (c.items.length ? ' has' : '')
+              }
+            >
+              <div className="cal-mnum">{c.date.getDate()}</div>
+              <div className="cal-mevents">
+                {c.items.map((t) => (
+                  <Link key={t.id} className="cal-mev" to="/runners" title={`${t.title} · ${t.start_time} · ${t.place}`}>
+                    <span className="mev-time">{t.start_time}</span>
+                    <span className="mev-t">{t.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="cal">
         {days.map((d) => (

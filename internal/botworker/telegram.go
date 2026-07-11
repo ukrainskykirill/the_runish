@@ -111,7 +111,7 @@ func (w *Worker) handleTelegramUpdate(ctx context.Context, u telegram.Update) {
 
 	w.logger.Info("telegram /start handled", "user_id", user.ID, "tg_id", user.TelegramID)
 
-	if user.Phone == "" {
+	if user.Phone == "" && nonce == "" {
 		w.askForPhone(ctx, user, u.Message.Chat.ID)
 	}
 }

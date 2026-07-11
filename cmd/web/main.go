@@ -98,9 +98,7 @@ func main() {
 	}
 
 	if cfg.RunWorker {
-		bot := telegram.New(cfg.BotToken)
-		go botworker.New(store, provider, bot, cfg, logger).Run(ctx)
-		logger.Info("embedded worker started (RUN_WORKER=1)")
+		go runEmbeddedWorker(ctx, store, provider, cfg, logger)
 	} else {
 		poller := worker.NewPendingPaymentPoller(store, provider, logger)
 		go poller.Run(ctx)
@@ -142,4 +140,37 @@ func main() {
 		logger.Error("server shutdown error", "err", err)
 	}
 	logger.Info("server stopped")
+}
+
+const workerLeaderLockKey int64 = 728154001
+
+func runEmbeddedWorker(ctx context.Context, store *storage.Store, provider payment.PaymentProvider, cfg config.Config, logger *slog.Logger) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
+	standby := false
+	for {
+		conn, err := store.TryAdvisoryLock(ctx, workerLeaderLockKey)
+		switch {
+		case err != nil:
+			logger.Error("worker: acquire leader lock", "err", err)
+		case conn != nil:
+			logger.Info("embedded worker started (leader, RUN_WORKER=1)")
+			bot := telegram.New(cfg.BotToken)
+			botworker.New(store, provider, bot, cfg, logger).Run(ctx)
+			_ = conn.Close()
+			return
+		default:
+			if !standby {
+				logger.Info("embedded worker on standby (another instance holds the leader lock)")
+				standby = true
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }

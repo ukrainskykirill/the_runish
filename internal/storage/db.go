@@ -37,6 +37,23 @@ func New(ctx context.Context, dsn string, logger *slog.Logger) (*Store, error) {
 
 func (s *Store) DB() *sql.DB { return s.db }
 
+func (s *Store) TryAdvisoryLock(ctx context.Context, key int64) (*sql.Conn, error) {
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("advisory lock conn: %w", err)
+	}
+	var acquired bool
+	if err := conn.QueryRowContext(ctx, "SELECT pg_try_advisory_lock($1)", key).Scan(&acquired); err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("advisory lock: %w", err)
+	}
+	if !acquired {
+		_ = conn.Close()
+		return nil, nil
+	}
+	return conn, nil
+}
+
 func (s *Store) Close() error { return s.db.Close() }
 
 func (s *Store) WithTx(ctx context.Context, fn func(tx *sql.Tx) error) error {

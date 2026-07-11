@@ -10,43 +10,30 @@ import (
 	"therunish/internal/storage"
 )
 
-type surveyGroup struct {
+type surveyFlowBranch struct {
+	Key       string
 	Title     string
 	Questions []domain.SurveyQuestion
 }
 
-func groupSurveyQuestions(questions []domain.SurveyQuestion) []surveyGroup {
-	groups := []surveyGroup{
-		{Title: "Вступление (всем)"},
-		{Title: "Ветка: Новичок"},
-		{Title: "Ветка: Любитель"},
-		{Title: "Ветка: Регуляр"},
-		{Title: "Завершение (всем)"},
-	}
-	idx := func(q domain.SurveyQuestion) int {
+func groupSurveyFlow(questions []domain.SurveyQuestion) (intro []domain.SurveyQuestion, branches []surveyFlowBranch, outro []domain.SurveyQuestion) {
+	byBranch := map[string][]domain.SurveyQuestion{}
+	for _, q := range questions {
 		switch q.Phase {
 		case domain.SurveyPhaseIntro:
-			return 0
+			intro = append(intro, q)
 		case domain.SurveyPhaseOutro:
-			return 4
+			outro = append(outro, q)
 		case domain.SurveyPhaseBranch:
-			switch q.Branch {
-			case "novice":
-				return 1
-			case "casual":
-				return 2
-			case "regular":
-				return 3
-			}
-		}
-		return -1
-	}
-	for _, q := range questions {
-		if i := idx(q); i >= 0 {
-			groups[i].Questions = append(groups[i].Questions, q)
+			byBranch[q.Branch] = append(byBranch[q.Branch], q)
 		}
 	}
-	return groups
+	branches = []surveyFlowBranch{
+		{Key: "novice", Title: "Новичок", Questions: byBranch["novice"]},
+		{Key: "casual", Title: "Любитель", Questions: byBranch["casual"]},
+		{Key: "regular", Title: "Регуляр", Questions: byBranch["regular"]},
+	}
+	return intro, branches, outro
 }
 
 func (a *App) AdminListSurveyPage(w http.ResponseWriter, r *http.Request) {
@@ -57,13 +44,18 @@ func (a *App) AdminListSurveyPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	intro, branches, outro := groupSurveyFlow(questions)
 	data := struct {
 		PageData
-		Groups []surveyGroup
-		Total  int
+		Intro    []domain.SurveyQuestion
+		Branches []surveyFlowBranch
+		Outro    []domain.SurveyQuestion
+		Total    int
 	}{
 		PageData: PageData{BotUsername: a.cfg.BotUsername},
-		Groups:   groupSurveyQuestions(questions),
+		Intro:    intro,
+		Branches: branches,
+		Outro:    outro,
 		Total:    len(questions),
 	}
 	if err := a.renderer.Render(w, "admin_survey", data); err != nil {

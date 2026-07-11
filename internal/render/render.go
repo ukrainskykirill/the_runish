@@ -28,6 +28,7 @@ func New(fsys fs.FS, layouts []string, adminLayouts []string, pages []string) (*
 			"formatDateTime": formatDateTime,
 			"formatDatePtr":  formatDatePtr,
 			"weekday":        weekdayName,
+			"add":            func(a, b int) int { return a + b },
 			"pct": func(val, max int64) int {
 				if max == 0 {
 					return 0

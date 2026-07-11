@@ -1,109 +1,147 @@
 {{define "content"}}
-<h2 style="font-size:1.4rem;margin-bottom:1.5rem">
+<style>
+    .sf { max-width:720px; }
+    .sf .hint { color:#6b7280; font-size:.82rem; margin-top:.2rem; line-height:1.4; }
+    .sf .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1rem 1.1rem; margin-bottom:1.1rem; }
+    .sf .card-title { font-weight:700; margin-bottom:.15rem; }
+    .sf .card-sub { color:#9ca3af; font-size:.82rem; margin-bottom:.9rem; }
+    .sf .opt-row { display:flex; gap:.5rem; margin-bottom:.5rem; align-items:center; }
+    .sf .opt-branch-wrap { display:flex; align-items:center; gap:.35rem; color:#6b7280; font-size:.82rem; white-space:nowrap; }
+    .sf .selector-note { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; border-radius:8px; padding:.5rem .7rem; font-size:.85rem; margin-bottom:.8rem; }
+</style>
+
+<h2 style="font-size:1.4rem;margin-bottom:1.25rem">
     {{if .Question.ID}}Редактировать вопрос{{else}}Новый вопрос{{end}}
 </h2>
 
-{{if .Error}}
-<div class="alert-error">{{.Error}}</div>
-{{end}}
+{{if .Error}}<div class="alert-error">{{.Error}}</div>{{end}}
 
-<form method="POST" action="{{if .Question.ID}}/admin/survey/{{.Question.ID}}{{else}}/admin/survey{{end}}" style="max-width:680px">
-    <div class="form-group">
-        <label>Ключ (qkey) *</label>
-        <input type="text" name="key" required value="{{.Question.Key}}" placeholder="например, experience" pattern="[a-z0-9_]+">
-        <div class="text-muted" style="font-size:0.8rem">Латиница, цифры, _. Используется как идентификатор ответа — не меняйте без необходимости.</div>
-    </div>
+<form method="POST" action="{{if .Question.ID}}/admin/survey/{{.Question.ID}}{{else}}/admin/survey{{end}}" class="sf">
 
-    <div class="form-group">
-        <label>Короткая подпись *</label>
-        <input type="text" name="label" required value="{{.Question.Label}}" placeholder="например, Беговой опыт">
-    </div>
+    <div class="card">
+        <div class="card-title">О чём вопрос</div>
+        <div class="card-sub">То, что видит пользователь, и как ответ подписан внутри.</div>
 
-    <div class="form-group">
-        <label>Текст вопроса *</label>
-        <textarea name="prompt" required placeholder="Текст вопроса для пользователя...">{{.Question.Prompt}}</textarea>
-    </div>
-
-    <div class="form-group">
-        <label>Этап *</label>
-        <select name="phase" id="phase" onchange="togglePhase()">
-            <option value="intro" {{if eq .Question.Phase "intro"}}selected{{end}}>Вступление (всем)</option>
-            <option value="branch" {{if eq .Question.Phase "branch"}}selected{{end}}>Ветка</option>
-            <option value="outro" {{if eq .Question.Phase "outro"}}selected{{end}}>Завершение (всем)</option>
-        </select>
-    </div>
-
-    <div class="form-group" id="branch-field">
-        <label>Ветка *</label>
-        <select name="branch">
-            <option value="novice" {{if eq .Question.Branch "novice"}}selected{{end}}>Новичок</option>
-            <option value="casual" {{if eq .Question.Branch "casual"}}selected{{end}}>Любитель</option>
-            <option value="regular" {{if eq .Question.Branch "regular"}}selected{{end}}>Регуляр</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label>Тип вопроса *</label>
-        <select name="kind" id="kind" onchange="toggleKind()">
-            <option value="single" {{if eq .Question.Kind "single"}}selected{{end}}>Один выбор</option>
-            <option value="multi" {{if eq .Question.Kind "multi"}}selected{{end}}>Мультивыбор</option>
-            <option value="text" {{if eq .Question.Kind "text"}}selected{{end}}>Свободный текст</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label>
-            <input type="checkbox" name="is_selector" id="is_selector" {{if .Question.IsSelector}}checked{{end}} onchange="toggleSelector()" style="width:auto;margin-right:0.5rem">
-            Вопрос-селектор (ответ выбирает ветку анкеты)
-        </label>
-    </div>
-
-    <div class="form-group" id="options-group">
-        <label>Варианты ответов</label>
-        <div id="options">
-            {{range .Question.Options}}
-            <div class="opt-row" style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center">
-                <input type="text" name="option_label" value="{{.Label}}" placeholder="Вариант ответа" style="flex:1">
-                <select name="option_branch" class="opt-branch">
-                    <option value="">— ветка —</option>
-                    <option value="novice" {{if eq .Branch "novice"}}selected{{end}}>Новичок</option>
-                    <option value="casual" {{if eq .Branch "casual"}}selected{{end}}>Любитель</option>
-                    <option value="regular" {{if eq .Branch "regular"}}selected{{end}}>Регуляр</option>
-                </select>
-                <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.opt-row').remove()">✕</button>
-            </div>
-            {{end}}
+        <div class="form-group">
+            <label>Текст вопроса *</label>
+            <textarea name="prompt" required placeholder="Например: Как часто ты сейчас бегаешь?">{{.Question.Prompt}}</textarea>
+            <div class="hint">Это пользователь видит в анкете.</div>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="addOption()">+ Вариант</button>
+
+        <div class="form-group">
+            <label>Короткая подпись *</label>
+            <input type="text" name="label" required value="{{.Question.Label}}" placeholder="Например: Частота бега">
+            <div class="hint">Короткое название вопроса — видно только в админке и в сводке ответов.</div>
+        </div>
+
+        <div class="form-group">
+            <label>Ключ *</label>
+            <input type="text" name="key" required value="{{.Question.Key}}" placeholder="например, freq_reg" pattern="[a-z0-9_]+">
+            <div class="hint">Латиница, цифры, «_». Идентификатор ответа — не меняйте у существующего вопроса без необходимости.</div>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label>Порядок внутри группы</label>
-        <input type="number" name="position" value="{{.Question.Position}}">
+    <div class="card">
+        <div class="card-title">Где в анкете</div>
+        <div class="card-sub">Порядок показа: Вступление (всем) → одна ветка → Завершение (всем).</div>
+
+        <div class="form-group">
+            <label>Этап *</label>
+            <select name="phase" id="phase" onchange="togglePhase()">
+                <option value="intro" {{if eq .Question.Phase "intro"}}selected{{end}}>Вступление — показывается всем</option>
+                <option value="branch" {{if eq .Question.Phase "branch"}}selected{{end}}>Ветка — только выбравшим её</option>
+                <option value="outro" {{if eq .Question.Phase "outro"}}selected{{end}}>Завершение — показывается всем</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="branch-field">
+            <label>В какой ветке</label>
+            <select name="branch">
+                <option value="novice" {{if eq .Question.Branch "novice"}}selected{{end}}>Новичок</option>
+                <option value="casual" {{if eq .Question.Branch "casual"}}selected{{end}}>Любитель</option>
+                <option value="regular" {{if eq .Question.Branch "regular"}}selected{{end}}>Регуляр</option>
+            </select>
+            <div class="hint">Этот вопрос увидят только те, кто попал в выбранную ветку.</div>
+        </div>
+
+        <div class="form-group">
+            <label>Порядок внутри секции</label>
+            <input type="number" name="position" value="{{.Question.Position}}">
+            <div class="hint">Меньше — выше. Порядок можно менять и стрелками ↑↓ в списке.</div>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label>
-            <input type="checkbox" name="is_active" {{if or (not .Question.ID) .Question.IsActive}}checked{{end}} style="width:auto;margin-right:0.5rem">
-            Активен (показывается в анкете)
-        </label>
+    <div class="card">
+        <div class="card-title">Ответы</div>
+        <div class="card-sub">Как пользователь отвечает на вопрос.</div>
+
+        <div class="form-group">
+            <label>Тип ответа *</label>
+            <select name="kind" id="kind" onchange="toggleKind()">
+                <option value="single" {{if eq .Question.Kind "single"}}selected{{end}}>Один выбор из списка</option>
+                <option value="multi" {{if eq .Question.Kind "multi"}}selected{{end}}>Несколько вариантов</option>
+                <option value="text" {{if eq .Question.Kind "text"}}selected{{end}}>Свободный текст</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="selector-group">
+            <label>
+                <input type="checkbox" name="is_selector" id="is_selector" {{if .Question.IsSelector}}checked{{end}} onchange="toggleSelector()" style="width:auto;margin-right:0.5rem">
+                Этот вопрос выбирает ветку анкеты (селектор)
+            </label>
+            <div class="hint">Отметьте, если ответ определяет, в какую ветку пойдёт пользователь. Тогда у каждого варианта укажите целевую ветку. Селектор — это «один выбор».</div>
+        </div>
+
+        <div class="form-group" id="options-group">
+            <label>Варианты ответа</label>
+            <div id="selector-hint" class="selector-note" style="display:none">У каждого варианта выберите, в какую ветку он ведёт.</div>
+            <div id="options">
+                {{range .Question.Options}}
+                <div class="opt-row">
+                    <input type="text" name="option_label" value="{{.Label}}" placeholder="Текст варианта" style="flex:1">
+                    <span class="opt-branch-wrap">→ ветка
+                        <select name="option_branch" class="opt-branch">
+                            <option value="">—</option>
+                            <option value="novice" {{if eq .Branch "novice"}}selected{{end}}>Новичок</option>
+                            <option value="casual" {{if eq .Branch "casual"}}selected{{end}}>Любитель</option>
+                            <option value="regular" {{if eq .Branch "regular"}}selected{{end}}>Регуляр</option>
+                        </select>
+                    </span>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.opt-row').remove()">✕</button>
+                </div>
+                {{end}}
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addOption()">+ Вариант</button>
+        </div>
     </div>
 
-    <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
+    <div class="card">
+        <div class="form-group" style="margin:0">
+            <label>
+                <input type="checkbox" name="is_active" {{if or (not .Question.ID) .Question.IsActive}}checked{{end}} style="width:auto;margin-right:0.5rem">
+                Активен — показывать в анкете
+            </label>
+            <div class="hint">Снимите галочку, чтобы временно спрятать вопрос, не удаляя его.</div>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:0.75rem">
         <button type="submit" class="btn">{{if .Question.ID}}Сохранить{{else}}Создать{{end}}</button>
         <a href="/admin/survey" class="btn btn-secondary">Отмена</a>
     </div>
 </form>
 
 <template id="opt-template">
-    <div class="opt-row" style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center">
-        <input type="text" name="option_label" placeholder="Вариант ответа" style="flex:1">
-        <select name="option_branch" class="opt-branch">
-            <option value="">— ветка —</option>
-            <option value="novice">Новичок</option>
-            <option value="casual">Любитель</option>
-            <option value="regular">Регуляр</option>
-        </select>
+    <div class="opt-row">
+        <input type="text" name="option_label" placeholder="Текст варианта" style="flex:1">
+        <span class="opt-branch-wrap">→ ветка
+            <select name="option_branch" class="opt-branch">
+                <option value="">—</option>
+                <option value="novice">Новичок</option>
+                <option value="casual">Любитель</option>
+                <option value="regular">Регуляр</option>
+            </select>
+        </span>
         <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.opt-row').remove()">✕</button>
     </div>
 </template>
@@ -115,16 +153,19 @@
         toggleSelector();
     }
     function togglePhase() {
-        const isBranch = document.getElementById('phase').value === 'branch';
-        document.getElementById('branch-field').style.display = isBranch ? '' : 'none';
+        document.getElementById('branch-field').style.display =
+            document.getElementById('phase').value === 'branch' ? '' : 'none';
     }
     function toggleKind() {
         const isText = document.getElementById('kind').value === 'text';
         document.getElementById('options-group').style.display = isText ? 'none' : '';
+        document.getElementById('selector-group').style.display = isText ? 'none' : '';
+        if (isText) { document.getElementById('is_selector').checked = false; }
     }
     function toggleSelector() {
         const on = document.getElementById('is_selector').checked;
-        document.querySelectorAll('.opt-branch').forEach(function (el) {
+        document.getElementById('selector-hint').style.display = on ? '' : 'none';
+        document.querySelectorAll('.opt-branch-wrap').forEach(function (el) {
             el.style.display = on ? '' : 'none';
         });
     }

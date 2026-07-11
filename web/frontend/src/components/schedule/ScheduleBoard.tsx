@@ -108,12 +108,13 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
     const date = new Date(gridStart);
     date.setDate(gridStart.getDate() + i);
     const wd = isoWeekday(date);
+    const inCurrentWeek = date >= monday && date <= sunday;
     return {
       date,
       wd,
       inMonth: date.getMonth() === mMonth,
       isToday: sameDay(date, today),
-      items: byDay.get(wd) ?? [],
+      items: inCurrentWeek ? byDay.get(wd) ?? [] : [],
     };
   });
 
@@ -183,9 +184,29 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
               <div className="cal-mnum">{c.date.getDate()}</div>
               <div className="cal-mevents">
                 {c.items.map((t) => (
-                  <Link key={t.id} className="cal-mev" to="/runners" title={`${t.title} · ${t.start_time} · ${t.place}`}>
-                    <span className="mev-time">{t.start_time}</span>
+                  <Link key={t.id} className="cal-mev" to="/runners">
                     <span className="mev-t">{t.title}</span>
+                    <span className="mev-time">
+                      <ClockIcon />
+                      {t.start_time}
+                    </span>
+                    <span className="mev-place">
+                      <PinIcon />
+                      {t.place_url ? (
+                        <span
+                          className="ev-place-link"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(t.place_url!, '_blank', 'noopener,noreferrer');
+                          }}
+                        >
+                          {t.place}
+                        </span>
+                      ) : (
+                        t.place
+                      )}
+                    </span>
                   </Link>
                 ))}
               </div>

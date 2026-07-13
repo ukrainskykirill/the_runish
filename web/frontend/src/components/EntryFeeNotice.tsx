@@ -35,7 +35,7 @@ export function EntryFeeNotice() {
           <span className="en-num">3</span>
           <div>
             <b>Тренируйся</b>
-            <span>Пробежки, тренировки и сообщество</span>
+            <span>Тренировки и сообщество</span>
           </div>
         </li>
       </ol>

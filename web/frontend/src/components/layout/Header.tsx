@@ -49,7 +49,7 @@ export function Header() {
             Расписание
           </NavLink>
           <NavLink to="/runners" className={navLinkClass}>
-            Пробежки
+            Тренировки
           </NavLink>
           <NavLink to="/merch" className={navLinkClass}>
             Мерч
@@ -112,7 +112,7 @@ export function Header() {
             Расписание
           </NavLink>
           <NavLink to="/runners" className={navLinkClass} onClick={() => setMobileMenuOpen(false)}>
-            Пробежки
+            Тренировки
           </NavLink>
           <NavLink to="/merch" className={navLinkClass} onClick={() => setMobileMenuOpen(false)}>
             Мерч

@@ -113,7 +113,7 @@ export function CartDropdown({ open, onClose }: CartDropdownProps) {
             Оформить и оплатить
           </button>
           <Link className="view" to="/runners" onClick={onClose}>
-            Перейти к пробежкам
+            Перейти к тренировкам
           </Link>
         </div>
       ) : null}

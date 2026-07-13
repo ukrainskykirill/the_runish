@@ -76,7 +76,7 @@ export function CartPage() {
               <div>Корзина пуста</div>
               <p style={{ marginTop: 16 }}>
                 <Link className="btn btn-primary btn-sm" to="/runners">
-                  Перейти к пробежкам
+                  Перейти к тренировкам
                 </Link>
               </p>
             </div>

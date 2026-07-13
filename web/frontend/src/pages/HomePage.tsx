@@ -96,7 +96,7 @@ export function HomePage() {
               </h1>
             </div>
             <p className="lead">
-              Сообщество людей, для которых бег — это кайф, а не каторга. Пробежки, тренировки с
+              Сообщество людей, для которых бег — это кайф, а не каторга. Тренировки с
               тренерами и тёплая компания. Присоединяйся.
             </p>
             <div className="hero-actions">
@@ -155,7 +155,7 @@ export function HomePage() {
         <div className="wrap">
           <div className="sec-head between">
             <div>
-              <div className="eb">Пробежки и подписки</div>
+              <div className="eb">Тренировки и подписки</div>
               <h2 className="d2">Выбери формат</h2>
               <p>
                 Начни с бесплатного пробного занятия. Для подписок нужно один раз оплатить
@@ -163,7 +163,7 @@ export function HomePage() {
               </p>
             </div>
             <Link className="btn btn-ghost btn-sm" to="/runners">
-              Все пробежки
+              Все тренировки
             </Link>
           </div>
           <PromoCounter paid={promoPaid} limit={promoLimit} active={promoActive} />

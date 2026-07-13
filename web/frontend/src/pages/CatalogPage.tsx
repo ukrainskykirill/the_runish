@@ -15,7 +15,7 @@ export function CatalogPage() {
       <section className="page-hero">
         <div className="hero-sl speedlines" />
         <div className="wrap">
-          <div className="eb">Пробежки и подписки</div>
+          <div className="eb">Тренировки и подписки</div>
           <h1 className="d2">Выбери формат</h1>
         </div>
       </section>

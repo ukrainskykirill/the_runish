@@ -148,7 +148,7 @@ section { scroll-margin-top: 84px; }
 .ncard p { color: var(--text-body); font-size: 15px; margin: 10px 0 18px; flex: 1; white-space: pre-line; }
 .ncard .more { font-weight: 700; font-size: 14px; color: var(--runish-red); display: inline-flex; align-items: center; gap: 6px; }
 
-/* catalog (Пробежки) */
+/* catalog (Тренировки) */
 .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
 .ccard { position: relative; overflow: hidden; display: flex; flex-direction: column; padding: 28px; border-radius: var(--radius-lg); border: var(--border-w) solid var(--border-soft); background: var(--surface-card); }
 .sec.alt .ccard { background: var(--cream); }

@@ -14,7 +14,7 @@ export function Footer() {
           <div className="foot-nav">
             <div className="foot-col">
               <h4>Клуб</h4>
-              <Link to="/runners">Пробежки</Link>
+              <Link to="/runners">Тренировки</Link>
               <Link to="/news">Новости</Link>
               <Link to="/merch">Мерч</Link>
             </div>

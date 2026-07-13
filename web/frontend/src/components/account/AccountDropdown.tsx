@@ -55,7 +55,7 @@ export function AccountDropdown({ open, onClose }: AccountDropdownProps) {
         </Link>
         <Link className="pf-link" to="/runners" onClick={onClose}>
           <ListIcon className="i i-sm" />
-          Пробежки и подписки
+          Тренировки и подписки
         </Link>
         <Link className="pf-link" to="/news" onClick={onClose}>
           <FlagIcon className="i i-sm" />

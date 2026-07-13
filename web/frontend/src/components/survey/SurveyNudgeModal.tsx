@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -8,15 +8,10 @@ export function SurveyNudgeModal() {
   const { user, surveyStatus, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    if (!user) {
-      setDismissed(false);
-      return;
-    }
-    setDismissed(sessionStorage.getItem(`survey_nudge_dismissed_${user.id}`) === '1');
-  }, [user]);
+  const [dismissedUserId, setDismissedUserId] = useState<number | null>(null);
+  const dismissed = !!user && (
+    dismissedUserId === user.id || sessionStorage.getItem(`survey_nudge_dismissed_${user.id}`) === '1'
+  );
 
   const incomplete = surveyStatus === 'pending' || surveyStatus === 'in_progress';
   const onSurveyPage = location.pathname === '/survey';
@@ -25,7 +20,7 @@ export function SurveyNudgeModal() {
 
   function close() {
     if (user) sessionStorage.setItem(`survey_nudge_dismissed_${user.id}`, '1');
-    setDismissed(true);
+    setDismissedUserId(user?.id ?? null);
   }
 
   function goSurvey() {

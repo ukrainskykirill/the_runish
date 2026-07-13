@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, formatDate } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -7,6 +8,7 @@ import monogramCream from '../../assets/monogram-cream.png';
 import { BoxIcon, CalendarIcon, ListIcon, TelegramIcon } from '../../components/icons';
 
 export function MiniHomePage() {
+  const [renderedAt] = useState(() => Date.now());
   const { subscriptions } = useAuth();
   const { data } = useAsync(() => api.home(), []);
   const news = data?.news ?? [];
@@ -16,8 +18,7 @@ export function MiniHomePage() {
   if (sub) {
     const start = new Date(sub.started_at).getTime();
     const end = new Date(sub.expires_at).getTime();
-    const now = Date.now();
-    progressPct = end > start ? Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100)) : 0;
+    progressPct = end > start ? Math.min(100, Math.max(0, ((renderedAt - start) / (end - start)) * 100)) : 0;
   }
 
   return (

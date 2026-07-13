@@ -30,6 +30,9 @@ const MiniSubscriptionsPage = lazy(() =>
 const MiniProfilePage = lazy(() =>
   import('./pages/app/MiniProfilePage').then((m) => ({ default: m.MiniProfilePage })),
 );
+const MiniSurveyPage = lazy(() =>
+  import('./pages/app/MiniSurveyPage').then((m) => ({ default: m.MiniSurveyPage })),
+);
 
 function App() {
   return (
@@ -57,6 +60,7 @@ function App() {
             <Route path="schedule" element={<MiniSchedulePage />} />
             <Route path="subscriptions" element={<MiniSubscriptionsPage />} />
             <Route path="profile" element={<MiniProfilePage />} />
+            <Route path="profile/survey" element={<MiniSurveyPage />} />
           </Route>
         </Routes>
       </Suspense>

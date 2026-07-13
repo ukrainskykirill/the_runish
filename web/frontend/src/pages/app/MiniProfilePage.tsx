@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, formatDate } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { useTelegram, requestTelegramContact } from '../../hooks/useTelegram';
 import { TELEGRAM_LINKS } from '../../lib/constants';
-import { CheckIcon, SupportIcon, TelegramIcon } from '../../components/icons';
+import { CheckIcon, ChevronRightIcon, FlagIcon, SupportIcon, TelegramIcon } from '../../components/icons';
 
 const MONTHS_GEN = [
   'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
@@ -22,7 +23,7 @@ function initials(fullName: string): string {
 }
 
 export function MiniProfilePage() {
-  const { user, subscriptions, trainingRegistrations, refresh, logout } = useAuth();
+  const { user, subscriptions, trainingRegistrations, surveyStatus, refresh, logout } = useAuth();
   const { showToast } = useUI();
   const tg = useTelegram();
   const [cancelingId, setCancelingId] = useState<number | null>(null);
@@ -79,6 +80,31 @@ export function MiniProfilePage() {
           ) : null}
         </div>
       </div>
+
+      <Link className="survey-profile-card" to="/app/profile/survey">
+        <span className="survey-profile-icon">
+          <FlagIcon className="i" />
+        </span>
+        <span className="survey-profile-copy">
+          <span className="survey-profile-kicker">Анкета бегуна</span>
+          <strong>
+            {surveyStatus === 'completed'
+              ? 'Ответы сохранены'
+              : surveyStatus === 'in_progress'
+                ? 'Продолжить заполнение'
+                : 'Давайте познакомимся'}
+          </strong>
+          <small>
+            {surveyStatus === 'completed'
+              ? 'Можно посмотреть или изменить ответы'
+              : 'Расскажите о целях — это займёт пару минут'}
+          </small>
+        </span>
+        <span className={`survey-profile-status ${surveyStatus}`}>
+          {surveyStatus === 'completed' ? 'Готово' : surveyStatus === 'in_progress' ? 'В процессе' : 'Начать'}
+        </span>
+        <ChevronRightIcon className="i i-sm survey-profile-arrow" />
+      </Link>
 
       {!user.phone ? (
         <div className="row-card">

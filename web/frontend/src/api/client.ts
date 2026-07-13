@@ -98,6 +98,10 @@ export const api = {
     }),
 
   checkout: () => request<CheckoutResponse>('/checkout', { method: 'POST' }),
+  paymentStatus: (order: string) =>
+    request<{ status: 'paid' | 'pending' | 'failed' | 'refunded' }>(
+      `/payment/status?order=${encodeURIComponent(order)}`,
+    ),
 
   survey: (signal?: AbortSignal) => request<SurveyResponse>('/survey', { signal }),
   surveySubmit: (answers: SurveyAnswers) =>

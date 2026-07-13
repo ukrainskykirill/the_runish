@@ -48,6 +48,8 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("POST /api/auth/logout", a.APIAuthLogout)
 	mux.HandleFunc("POST /api/me/notifications/enable", a.mw.RequireUser(http.HandlerFunc(a.APIMeEnableNotifications)).ServeHTTP)
 
+	mux.HandleFunc("GET /api/payment/status", a.APIPaymentStatus)
+
 	mux.HandleFunc("POST /payment/webhook", a.PaymentWebhook)
 	mux.HandleFunc("GET /payment/success", a.PaymentSuccess)
 	mux.HandleFunc("GET /payment/fail", a.PaymentFail)

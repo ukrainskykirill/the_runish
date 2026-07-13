@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"therunish/internal/config"
@@ -89,8 +90,8 @@ func (c *Checkout) Start(ctx context.Context, user *domain.User) (CheckoutResult
 		AmountKop:       total,
 		Description:     fmt.Sprintf("Заказ #%d — The Runish", orderID),
 		NotificationURL: c.cfg.BaseURL + "/payment/webhook",
-		SuccessURL:      c.cfg.BaseURL + "/payment/success",
-		FailURL:         c.cfg.BaseURL + "/payment/fail",
+		SuccessURL:      c.cfg.BaseURL + "/payment/success?order=" + url.QueryEscape(tbankOrderID),
+		FailURL:         c.cfg.BaseURL + "/payment/fail?order=" + url.QueryEscape(tbankOrderID),
 	}
 
 	if receipt := c.BuildReceipt(order); receipt != nil {

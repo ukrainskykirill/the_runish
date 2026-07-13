@@ -17,6 +17,19 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ de
 const PaymentResultPage = lazy(() =>
   import('./pages/PaymentResultPage').then((m) => ({ default: m.PaymentResultPage })),
 );
+const MiniAppLayout = lazy(() =>
+  import('./pages/app/MiniAppLayout').then((m) => ({ default: m.MiniAppLayout })),
+);
+const MiniHomePage = lazy(() => import('./pages/app/MiniHomePage').then((m) => ({ default: m.MiniHomePage })));
+const MiniSchedulePage = lazy(() =>
+  import('./pages/app/MiniSchedulePage').then((m) => ({ default: m.MiniSchedulePage })),
+);
+const MiniSubscriptionsPage = lazy(() =>
+  import('./pages/app/MiniSubscriptionsPage').then((m) => ({ default: m.MiniSubscriptionsPage })),
+);
+const MiniProfilePage = lazy(() =>
+  import('./pages/app/MiniProfilePage').then((m) => ({ default: m.MiniProfilePage })),
+);
 
 function App() {
   return (
@@ -38,6 +51,12 @@ function App() {
             <Route path="/payment/success" element={<PaymentResultPage status="success" />} />
             <Route path="/payment/fail" element={<PaymentResultPage status="fail" />} />
             <Route path="*" element={<NotFoundPage />} />
+          </Route>
+          <Route path="/app" element={<MiniAppLayout />}>
+            <Route index element={<MiniHomePage />} />
+            <Route path="schedule" element={<MiniSchedulePage />} />
+            <Route path="subscriptions" element={<MiniSubscriptionsPage />} />
+            <Route path="profile" element={<MiniProfilePage />} />
           </Route>
         </Routes>
       </Suspense>

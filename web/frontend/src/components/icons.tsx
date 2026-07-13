@@ -186,3 +186,16 @@ export function PinIcon(props: IconProps) {
     </>
   ));
 }
+
+export function HomeIcon(props: IconProps) {
+  return base(props, (
+    <>
+      <path d="M4 11 12 4l8 7" />
+      <path d="M6 10v9h12v-9" />
+    </>
+  ));
+}
+
+export function PlusIcon(props: IconProps) {
+  return base(props, <path d="M12 5v14M5 12h14" />);
+}

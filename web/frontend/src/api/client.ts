@@ -116,6 +116,14 @@ export const api = {
     request<{ status: string }>(`/auth/telegram/status?nonce=${encodeURIComponent(nonce)}`),
   authTelegramComplete: (nonce: string) =>
     request<{ ok: boolean }>(`/auth/telegram/complete?nonce=${encodeURIComponent(nonce)}`),
+  authTelegramWebApp: (initData: string, allowWrite: boolean) =>
+    request<{ ok: boolean }>('/auth/telegram/webapp', {
+      method: 'POST',
+      body: JSON.stringify({ init_data: initData, allow_write: allowWrite }),
+    }),
+  enableNotifications: () => request<{ ok: boolean }>('/me/notifications/enable', { method: 'POST' }),
+  /** Только для локальной разработки: включён на бэке, только если DEV_AUTH_BYPASS=1. */
+  authDev: () => request<{ ok: boolean }>('/auth/dev', { method: 'POST', body: '{}' }),
   logout: () => request<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
 };
 

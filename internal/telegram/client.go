@@ -161,6 +161,19 @@ func (c *Client) SetMyCommands(ctx context.Context, cmds []BotCommand) error {
 	return c.do(ctx, "/setMyCommands", map[string]any{"commands": cmds}, nil)
 }
 
+// SetChatMenuButton points the bot's persistent menu button at a Telegram Mini App URL,
+// so tapping it opens the app instead of the default "Menu" command list.
+func (c *Client) SetChatMenuButton(ctx context.Context, webAppURL, text string) error {
+	payload := map[string]any{
+		"menu_button": map[string]any{
+			"type":    "web_app",
+			"text":    text,
+			"web_app": map[string]any{"url": webAppURL},
+		},
+	}
+	return c.do(ctx, "/setChatMenuButton", payload, nil)
+}
+
 type apiResponse struct {
 	OK          bool   `json:"ok"`
 	ErrorCode   int    `json:"error_code"`

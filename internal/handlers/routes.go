@@ -43,7 +43,10 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /api/auth/telegram/complete", a.APIAuthTelegramComplete)
 	mux.HandleFunc("GET /api/auth/vk/start", a.APIAuthVKStart)
 	mux.HandleFunc("GET /api/auth/vk/callback", a.APIAuthVKCallback)
+	mux.HandleFunc("POST /api/auth/telegram/webapp", a.APIAuthTelegramWebApp)
+	mux.HandleFunc("POST /api/auth/dev", a.APIAuthDev)
 	mux.HandleFunc("POST /api/auth/logout", a.APIAuthLogout)
+	mux.HandleFunc("POST /api/me/notifications/enable", a.mw.RequireUser(http.HandlerFunc(a.APIMeEnableNotifications)).ServeHTTP)
 
 	mux.HandleFunc("POST /payment/webhook", a.PaymentWebhook)
 	mux.HandleFunc("GET /payment/success", a.PaymentSuccess)

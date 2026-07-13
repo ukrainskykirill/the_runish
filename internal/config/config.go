@@ -49,6 +49,11 @@ type Config struct {
 	AlertChatID       int64
 
 	LogLevel slog.Level
+
+	// DevAuthEnabled turns on POST /api/auth/dev, a no-Telegram login bypass used to
+	// exercise the Mini App (/app) in a regular browser during local development.
+	// Off by default; must be explicitly opted into and should never be set in prod.
+	DevAuthEnabled bool
 }
 
 func Load() (Config, error) {
@@ -76,6 +81,7 @@ func Load() (Config, error) {
 		SentryDSN:          os.Getenv("SENTRY_DSN"),
 		SentryEnvironment:  getenv("SENTRY_ENVIRONMENT", "production"),
 		AlertBotToken:      os.Getenv("ALERT_BOT_TOKEN"),
+		DevAuthEnabled:     getenv("DEV_AUTH_BYPASS", "") == "1",
 	}
 
 	if v := os.Getenv("ALERT_CHAT_ID"); v != "" {

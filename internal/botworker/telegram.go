@@ -25,6 +25,12 @@ func (w *Worker) pollTelegramUpdates(ctx context.Context) {
 		w.logger.Warn("set bot commands", "err", err)
 	}
 
+	if w.cfg.BaseURL != "" {
+		if err := w.bot.SetChatMenuButton(ctx, w.cfg.BaseURL+"/app", "Открыть клуб"); err != nil {
+			w.logger.Warn("set chat menu button", "err", err)
+		}
+	}
+
 	var offset int64
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()

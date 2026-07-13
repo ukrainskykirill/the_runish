@@ -11,6 +11,7 @@ import { NewsCard } from '../components/cards/NewsCard';
 import { ServiceCard } from '../components/cards/ServiceCard';
 import { TelegramCard } from '../components/cards/TelegramCard';
 import { Marquee } from '../components/Marquee';
+import { PromoCounter } from '../components/PromoCounter';
 import { NewsModal } from '../components/news/NewsModal';
 import { ScheduleCalendar } from '../components/schedule/ScheduleCalendar';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +35,10 @@ export function HomePage() {
   const news = homeData?.news ?? [];
   const merch = homeData?.merch ?? [];
   const trainings = homeData?.trainings ?? EMPTY_TRAININGS;
+  const promoActive = homeData?.promo_active ?? false;
+  const promoPaid = homeData?.promo_paid ?? 0;
+  const promoLimit = homeData?.promo_limit ?? 30;
+  const promoLeft = Math.max(0, promoLimit - promoPaid);
 
   async function handleFreeLessonClick() {
     if (freeLessonBusy) return;
@@ -119,7 +124,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <Marquee />
+      <Marquee promoActive={promoActive} left={promoLeft} />
 
       <section className="sec alt" id="about">
         <div className="wrap">
@@ -161,6 +166,7 @@ export function HomePage() {
               Все пробежки
             </Link>
           </div>
+          <PromoCounter paid={promoPaid} limit={promoLimit} active={promoActive} />
           <EntryFeeNotice />
           <div className="cat-grid">
             {services.map((service) => (

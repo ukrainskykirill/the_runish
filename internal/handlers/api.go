@@ -7,6 +7,7 @@ import (
 	"therunish/internal/auth"
 	"therunish/internal/domain"
 	"therunish/internal/storage"
+	"therunish/internal/usecase"
 )
 
 func (a *App) APIMe(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +98,12 @@ func (a *App) APIHome(w http.ResponseWriter, r *http.Request) {
 		pc.ApplyService(&services[i])
 	}
 
+	promoPaid, err := a.store.CountEntryFeePaid(ctx)
+	if err != nil {
+		a.logger.Error("home: count entry fee paid", "err", err)
+		promoPaid = 0
+	}
+
 	news, err := a.store.ListNews(ctx, false)
 	if err != nil {
 		a.logger.Error("home: list news", "err", err)
@@ -130,12 +137,16 @@ func (a *App) APIHome(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, struct {
 		Services    []domain.Service  `json:"services"`
 		PromoActive bool              `json:"promo_active"`
+		PromoPaid   int               `json:"promo_paid"`
+		PromoLimit  int               `json:"promo_limit"`
 		News        []domain.News     `json:"news"`
 		Merch       []domain.Merch    `json:"merch"`
 		Trainings   []domain.Training `json:"trainings"`
 	}{
 		Services:    limitSlice(services, 4),
 		PromoActive: pc.PromoActive,
+		PromoPaid:   promoPaid,
+		PromoLimit:  usecase.First30PromoLimit,
 		News:        limitSlice(news, 3),
 		Merch:       limitSlice(merch, 3),
 		Trainings:   trainings,

@@ -23,6 +23,7 @@ export function ServiceCard({ service, onAdd }: ServiceCardProps) {
 
   const chipLabel = CHIP_LABEL[service.kind] ?? 'Услуга';
   const chipClass = isFree ? 'chip chip-track' : 'chip';
+  const featured = service.kind === 'subscription' || service.kind === 'bundle';
 
   const disabled = service.locked || service.owned;
   let btnLabel = isFree ? 'Записаться' : 'В корзину';
@@ -33,7 +34,7 @@ export function ServiceCard({ service, onAdd }: ServiceCardProps) {
   }
 
   return (
-    <div className="ccard">
+    <div className={`ccard${featured ? ' featured' : ''}`}>
       <div className="ct-top">
         <span className={chipClass}>{chipLabel}</span>
         {discounted ? <span className="chip chip-red">−{pct}%</span> : null}

@@ -153,6 +153,8 @@ section { scroll-margin-top: 84px; }
 .ccard { position: relative; overflow: hidden; display: flex; flex-direction: column; padding: 28px; border-radius: var(--radius-lg); border: var(--border-w) solid var(--border-soft); background: var(--surface-card); }
 .sec.alt .ccard { background: var(--cream); }
 .ccard.feat { background: var(--runish-red); color: var(--cream-light); border-color: transparent; box-shadow: var(--shadow-red); }
+.ccard.featured { border-color: var(--runish-red); box-shadow: 0 0 0 1px var(--runish-red), 0 8px 26px rgba(224, 51, 10, 0.14); }
+.ccard.featured .chip { background: var(--runish-red); color: var(--cream-light); border-color: transparent; }
 .ccard.feat .desc, .ccard.feat .dur { color: rgba(244,236,221,0.86); }
 .ccard .feat-sl { position: absolute; inset: 0; color: rgba(255,255,255,0.08); --sl-w: 2px; --sl-gap: 16px; pointer-events: none; }
 .ccard .ct-top { position: relative; display: flex; justify-content: space-between; align-items: flex-start; min-height: 24px; }
@@ -208,6 +210,36 @@ section { scroll-margin-top: 84px; }
 @media (max-width: 720px) {
   .entry-notice { padding: 18px 18px; }
   .en-steps { grid-template-columns: 1fr; gap: 12px; }
+}
+
+.promo-counter {
+  background: var(--surface-card);
+  border: 1px solid var(--cream-deep);
+  border-left: 4px solid var(--runish-red);
+  border-radius: var(--radius-md);
+  padding: 18px 24px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+.pc-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.pc-badge {
+  display: inline-block; background: var(--runish-red); color: var(--text-on-red);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+  padding: 4px 10px; border-radius: var(--radius-pill);
+}
+.pc-sub { color: var(--text-body); font-size: 14px; }
+.pc-count { font-family: var(--font-mono); font-size: 18px; color: var(--text-strong); margin-bottom: 10px; }
+.pc-count b { color: var(--runish-red); font-size: 22px; }
+.pc-bar {
+  height: 10px; border-radius: var(--radius-pill);
+  background: var(--cream-deep); overflow: hidden;
+}
+.pc-bar-fill {
+  height: 100%; border-radius: var(--radius-pill);
+  background: var(--runish-red); transition: width var(--dur) var(--ease-out);
+}
+@media (max-width: 720px) {
+  .promo-counter { padding: 16px 18px; }
 }
 
 /* merch */

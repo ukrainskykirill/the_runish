@@ -25,6 +25,8 @@ export interface CatalogResponse {
 export interface HomeResponse {
   services: Service[];
   promo_active: boolean;
+  promo_paid: number;
+  promo_limit: number;
   news: NewsItem[];
   merch: MerchItem[];
   trainings: Training[];

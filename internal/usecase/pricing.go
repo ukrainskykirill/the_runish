@@ -13,6 +13,8 @@ type Pricing struct {
 	logger *slog.Logger
 }
 
+const First30PromoLimit = 30
+
 type PricingContext struct {
 	PromoActive  bool
 	hasActiveSub bool
@@ -34,7 +36,7 @@ func (p *Pricing) Context(ctx context.Context, user *domain.User) PricingContext
 		n, err := p.store.CountEntryFeeReserved(ctx)
 		if err != nil {
 			p.logger.Error("count entry fee reserved", "err", err)
-		} else if n < 30 {
+		} else if n < First30PromoLimit {
 			pc.PromoActive = true
 		}
 	}

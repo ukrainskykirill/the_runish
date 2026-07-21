@@ -14,6 +14,11 @@
     </div>
 
     <div class="form-group">
+        <label>Описание</label>
+        <textarea name="description" rows="4" placeholder="Раскрывается по клику в расписании (необязательно)">{{if .Training}}{{.Training.Description}}{{end}}</textarea>
+    </div>
+
+    <div class="form-group">
         <label>День недели *</label>
         <select name="weekday" required>
             {{$cur := 0}}{{if .Training}}{{$cur = .Training.Weekday}}{{end}}

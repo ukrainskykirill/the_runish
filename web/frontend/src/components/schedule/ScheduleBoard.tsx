@@ -49,6 +49,93 @@ function PinIcon() {
   );
 }
 
+function ChevronIcon() {
+  return (
+    <svg className="i i-xs" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+interface EventProps {
+  t: Training;
+  variant: 'week' | 'month';
+  expanded: boolean;
+  onToggle: () => void;
+}
+
+// Одно событие в расписании. Если у тренировки есть описание — клик раскрывает его,
+// иначе ведёт в каталог (как раньше).
+function ScheduleEvent({ t, variant, expanded, onToggle }: EventProps) {
+  const cls = variant === 'week' ? 'cal-ev' : 'cal-mev';
+  const tCls = variant === 'week' ? 'ev-t' : 'mev-t';
+  const timeCls = variant === 'week' ? 'ev-time' : 'mev-time';
+  const placeCls = variant === 'week' ? 'ev-place' : 'mev-place';
+  const hasDesc = !!t.description;
+
+  const placeNode = t.place_url ? (
+    <span
+      className="ev-place-link"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.open(t.place_url!, '_blank', 'noopener,noreferrer');
+      }}
+    >
+      {t.place}
+    </span>
+  ) : (
+    t.place
+  );
+
+  const inner = (
+    <>
+      <div className={tCls}>
+        {t.title}
+        {hasDesc && (
+          <span className={'cal-ev-caret' + (expanded ? ' open' : '')}>
+            <ChevronIcon />
+          </span>
+        )}
+      </div>
+      <div className={timeCls}>
+        <ClockIcon />
+        {t.start_time}
+      </div>
+      <div className={placeCls}>
+        <PinIcon />
+        {placeNode}
+      </div>
+      {hasDesc && expanded && <div className="cal-ev-desc">{t.description}</div>}
+    </>
+  );
+
+  if (hasDesc) {
+    return (
+      <div
+        className={cls + ' has-desc' + (expanded ? ' open' : '')}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+      >
+        {inner}
+      </div>
+    );
+  }
+  return (
+    <Link className={cls} to="/runners">
+      {inner}
+    </Link>
+  );
+}
+
 type CalView = 'week' | 'month';
 
 interface ScheduleBoardProps {
@@ -58,12 +145,16 @@ interface ScheduleBoardProps {
 
 export function ScheduleBoard({ trainings: providedTrainings, enableViews = false }: ScheduleBoardProps) {
   const [view, setView] = useState<CalView>('week');
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const shouldFetch = providedTrainings === undefined;
   const { data, loading, error } = useAsync(
     () => (shouldFetch ? api.schedule() : Promise.resolve({ trainings: providedTrainings })),
     [shouldFetch, providedTrainings],
   );
   const trainings = data?.trainings ?? providedTrainings ?? [];
+
+  const toggle = (id: number) => setExpandedId((cur) => (cur === id ? null : id));
 
   const today = new Date();
   const todayIso = isoWeekday(today);
@@ -97,9 +188,10 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
       ? `${monday.getDate()} — ${sunday.getDate()} ${MONTHS_GEN[sunday.getMonth()]}`
       : `${monday.getDate()} ${MONTHS_GEN[monday.getMonth()]} — ${sunday.getDate()} ${MONTHS_GEN[sunday.getMonth()]}`;
 
-  const mYear = today.getFullYear();
-  const mMonth = today.getMonth();
-  const monthFirst = new Date(mYear, mMonth, 1);
+  // Отображаемый месяц (0 = текущий), с проекцией недельного шаблона на все недели.
+  const monthFirst = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  const mYear = monthFirst.getFullYear();
+  const mMonth = monthFirst.getMonth();
   const gridStart = new Date(monthFirst);
   gridStart.setDate(monthFirst.getDate() - (isoWeekday(monthFirst) - 1));
   const daysInMonth = new Date(mYear, mMonth + 1, 0).getDate();
@@ -108,15 +200,18 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
     const date = new Date(gridStart);
     date.setDate(gridStart.getDate() + i);
     const wd = isoWeekday(date);
-    const inCurrentWeek = date >= monday && date <= sunday;
+    const inMonth = date.getMonth() === mMonth;
     return {
       date,
       wd,
-      inMonth: date.getMonth() === mMonth,
+      inMonth,
       isToday: sameDay(date, today),
-      items: inCurrentWeek ? byDay.get(wd) ?? [] : [],
+      items: inMonth ? byDay.get(wd) ?? [] : [],
     };
   });
+
+  const minMonthOffset = -today.getMonth();
+  const maxMonthOffset = 11 - today.getMonth();
 
   const headTitle = view === 'month' ? `${MONTHS_NOM[mMonth]} ${mYear}` : 'Эта неделя';
   const headRange = view === 'month' ? '' : weekRange;
@@ -126,8 +221,34 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
       <div className="cal-strip speedlines" />
       <div className="cal-board-head">
         <div className="wk">
-          <span className="t">{headTitle}</span>
-          {headRange ? <span className="r">{headRange}</span> : null}
+          {view === 'month' && enableViews ? (
+            <div className="cal-monthnav">
+              <button
+                type="button"
+                className="cal-navbtn"
+                aria-label="Предыдущий месяц"
+                disabled={monthOffset <= minMonthOffset}
+                onClick={() => setMonthOffset((m) => Math.max(m - 1, minMonthOffset))}
+              >
+                ‹
+              </button>
+              <span className="t">{headTitle}</span>
+              <button
+                type="button"
+                className="cal-navbtn"
+                aria-label="Следующий месяц"
+                disabled={monthOffset >= maxMonthOffset}
+                onClick={() => setMonthOffset((m) => Math.min(m + 1, maxMonthOffset))}
+              >
+                ›
+              </button>
+            </div>
+          ) : (
+            <>
+              <span className="t">{headTitle}</span>
+              {headRange ? <span className="r">{headRange}</span> : null}
+            </>
+          )}
         </div>
         {enableViews ? (
           <div className="cal-views" role="tablist" aria-label="Вид календаря">
@@ -184,30 +305,13 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
               <div className="cal-mnum">{c.date.getDate()}</div>
               <div className="cal-mevents">
                 {c.items.map((t) => (
-                  <Link key={t.id} className="cal-mev" to="/runners">
-                    <span className="mev-t">{t.title}</span>
-                    <span className="mev-time">
-                      <ClockIcon />
-                      {t.start_time}
-                    </span>
-                    <span className="mev-place">
-                      <PinIcon />
-                      {t.place_url ? (
-                        <span
-                          className="ev-place-link"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            window.open(t.place_url!, '_blank', 'noopener,noreferrer');
-                          }}
-                        >
-                          {t.place}
-                        </span>
-                      ) : (
-                        t.place
-                      )}
-                    </span>
-                  </Link>
+                  <ScheduleEvent
+                    key={t.id}
+                    t={t}
+                    variant="month"
+                    expanded={expandedId === t.id}
+                    onToggle={() => toggle(t.id)}
+                  />
                 ))}
               </div>
             </div>
@@ -240,30 +344,13 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
                 </div>
               ) : (
                 d.items.map((t) => (
-                  <Link key={t.id} className="cal-ev" to="/runners">
-                    <div className="ev-t">{t.title}</div>
-                    <div className="ev-time">
-                      <ClockIcon />
-                      {t.start_time}
-                    </div>
-                    <div className="ev-place">
-                      <PinIcon />
-                      {t.place_url ? (
-                        <span
-                          className="ev-place-link"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            window.open(t.place_url!, '_blank', 'noopener,noreferrer');
-                          }}
-                        >
-                          {t.place}
-                        </span>
-                      ) : (
-                        t.place
-                      )}
-                    </div>
-                  </Link>
+                  <ScheduleEvent
+                    key={t.id}
+                    t={t}
+                    variant="week"
+                    expanded={expandedId === t.id}
+                    onToggle={() => toggle(t.id)}
+                  />
                 ))
               )}
             </div>

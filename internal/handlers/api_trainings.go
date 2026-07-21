@@ -1,15 +1,40 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"therunish/internal/auth"
 	"therunish/internal/domain"
 	"therunish/internal/storage"
+	"therunish/internal/telegram"
 )
+
+var monthsRuGen = [...]string{
+	"января", "февраля", "марта", "апреля", "мая", "июня",
+	"июля", "августа", "сентября", "октября", "ноября", "декабря",
+}
+
+func formatDateRu(date string) string {
+	t, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return date
+	}
+	return fmt.Sprintf("%d %s", t.Day(), monthsRuGen[t.Month()-1])
+}
+
+func renderMsgTemplate(tmpl string, vars map[string]string) string {
+	pairs := make([]string, 0, len(vars)*2)
+	for k, v := range vars {
+		pairs = append(pairs, "{"+k+"}", v)
+	}
+	return strings.NewReplacer(pairs...).Replace(tmpl)
+}
 
 func (a *App) APITrainingsUpcoming(w http.ResponseWriter, r *http.Request) {
 	var userID int64
@@ -62,7 +87,31 @@ func (a *App) APITrainingRegister(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "internal_error")
 		return
 	}
+	go a.notifyTrainingSignedUp(*user, reg)
 	writeJSON(w, http.StatusOK, reg)
+}
+
+func (a *App) notifyTrainingSignedUp(user domain.User, reg domain.TrainingRegistration) {
+	if a.cfg.BotToken == "" || user.TelegramID == 0 || !user.BotDialogOpen {
+		return
+	}
+	ctx := context.Background()
+	tmpl := a.store.MessageTemplate(ctx, storage.SettingTmplTrainingSignedUp)
+	text := renderMsgTemplate(tmpl, map[string]string{
+		"title": reg.Title,
+		"date":  formatDateRu(reg.SessionDate),
+		"time":  reg.StartTime,
+		"place": reg.Place,
+	})
+	bot := telegram.New(a.cfg.BotToken)
+	if err := bot.SendMessage(ctx, user.TelegramID, text); err != nil {
+		var apiErr *telegram.APIError
+		if errors.As(err, &apiErr) && apiErr.IsForbidden() {
+			_ = a.store.SetBotDialogOpen(ctx, user.ID, false)
+		} else {
+			a.logger.Error("send training signed-up notice", "err", err, "user_id", user.ID)
+		}
+	}
 }
 
 func (a *App) APITrainingCancel(w http.ResponseWriter, r *http.Request) {

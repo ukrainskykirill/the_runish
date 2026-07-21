@@ -9,19 +9,21 @@ import (
 	"therunish/internal/domain"
 )
 
-const trainingCols = `id, title, weekday, to_char(start_time, 'HH24:MI') AS start_time,
+const trainingCols = `id, title, description, weekday, to_char(start_time, 'HH24:MI') AS start_time,
 	place, place_url, is_active, sort_order, capacity, created_at, updated_at`
 
 func scanTraining(sc rowScanner) (domain.Training, error) {
 	var t domain.Training
+	var description sql.NullString
 	var placeURL sql.NullString
 	var capacity sql.NullInt64
 	if err := sc.Scan(
-		&t.ID, &t.Title, &t.Weekday, &t.StartTime, &t.Place, &placeURL,
+		&t.ID, &t.Title, &description, &t.Weekday, &t.StartTime, &t.Place, &placeURL,
 		&t.IsActive, &t.SortOrder, &capacity, &t.CreatedAt, &t.UpdatedAt,
 	); err != nil {
 		return domain.Training{}, err
 	}
+	t.Description = description.String
 	if placeURL.Valid {
 		t.PlaceURL = &placeURL.String
 	}
@@ -34,12 +36,12 @@ func scanTraining(sc rowScanner) (domain.Training, error) {
 
 func (s *Store) CreateTraining(ctx context.Context, t *domain.Training) (int64, error) {
 	const q = `
-		INSERT INTO trainings (title, weekday, start_time, place, place_url, is_active, sort_order, capacity)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO trainings (title, description, weekday, start_time, place, place_url, is_active, sort_order, capacity)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id`
 	var id int64
 	err := s.db.QueryRowContext(ctx, q,
-		t.Title, t.Weekday, t.StartTime, t.Place, t.PlaceURL, t.IsActive, t.SortOrder, t.Capacity,
+		t.Title, sql.NullString{String: t.Description, Valid: t.Description != ""}, t.Weekday, t.StartTime, t.Place, t.PlaceURL, t.IsActive, t.SortOrder, t.Capacity,
 	).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("create training: %w", err)
@@ -50,10 +52,10 @@ func (s *Store) CreateTraining(ctx context.Context, t *domain.Training) (int64, 
 func (s *Store) UpdateTraining(ctx context.Context, t *domain.Training) error {
 	const q = `
 		UPDATE trainings
-		SET title = $1, weekday = $2, start_time = $3, place = $4, place_url = $5, is_active = $6, sort_order = $7, capacity = $8, updated_at = now()
-		WHERE id = $9`
+		SET title = $1, description = $2, weekday = $3, start_time = $4, place = $5, place_url = $6, is_active = $7, sort_order = $8, capacity = $9, updated_at = now()
+		WHERE id = $10`
 	res, err := s.db.ExecContext(ctx, q,
-		t.Title, t.Weekday, t.StartTime, t.Place, t.PlaceURL, t.IsActive, t.SortOrder, t.Capacity, t.ID,
+		t.Title, sql.NullString{String: t.Description, Valid: t.Description != ""}, t.Weekday, t.StartTime, t.Place, t.PlaceURL, t.IsActive, t.SortOrder, t.Capacity, t.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("update training: %w", err)

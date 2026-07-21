@@ -159,6 +159,7 @@ func (a *App) renderTrainingFormError(w http.ResponseWriter, t *domain.Training,
 
 func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 	title := r.FormValue("title")
+	description := strings.TrimSpace(r.FormValue("description"))
 	place := r.FormValue("place")
 	startTime := r.FormValue("start_time")
 	weekday, _ := strconv.Atoi(r.FormValue("weekday"))
@@ -193,13 +194,14 @@ func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 	}
 
 	return &domain.Training{
-		Title:     title,
-		Weekday:   weekday,
-		StartTime: startTime,
-		Place:     place,
-		PlaceURL:  placeURL,
-		IsActive:  isActive,
-		SortOrder: sortOrder,
-		Capacity:  capacity,
+		Title:       title,
+		Description: description,
+		Weekday:     weekday,
+		StartTime:   startTime,
+		Place:       place,
+		PlaceURL:    placeURL,
+		IsActive:    isActive,
+		SortOrder:   sortOrder,
+		Capacity:    capacity,
 	}, ""
 }

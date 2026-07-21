@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Training } from '../api/types';
-import monogramCream from '../assets/monogram-cream.png';
+import logoEmblem from '../assets/logo-emblem.png';
 import { HeroVideo } from '../components/HeroVideo';
 import { EntryFeeNotice } from '../components/EntryFeeNotice';
 import { FeatureCard } from '../components/cards/FeatureCard';
@@ -88,12 +88,8 @@ export function HomePage() {
         <div className="wrap hero-in">
           <div className="hero-copy">
             <div className="hero-title">
-              <img className="hero-mark" src={monogramCream} alt="The Runish" />
-              <h1 className="d1">
-                Рожденные
-                <br />
-                <span className="l2">двигаться</span>
-              </h1>
+              <img className="hero-mark" src={logoEmblem} alt="The Runish" />
+              <h1 className="d1">Беговой клуб</h1>
             </div>
             <p className="lead">
               Сообщество людей, для которых бег — это кайф, а не каторга. Тренировки с

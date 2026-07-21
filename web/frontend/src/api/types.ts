@@ -57,6 +57,7 @@ export interface MerchItem {
 export interface Training {
   id: number;
   title: string;
+  description?: string;
   weekday: number; // ISO: 1=Пн … 7=Вс
   start_time: string; // "HH:MM"
   place: string;

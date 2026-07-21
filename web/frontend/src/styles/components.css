@@ -96,7 +96,6 @@ section { scroll-margin-top: 84px; }
 .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: rgba(244,236,221,0.92); margin-bottom: 28px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; font-size: 13px; }
 .hero-eyebrow .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--cream-light); }
 .hero h1 { font-size: clamp(52px, 7vw, 118px); line-height: 0.98; }
-.hero h1 .l2 { color: rgba(255,236,221,0.58); }
 .hero p.lead { max-width: 500px; font-size: 21px; line-height: 1.45; color: rgba(248,240,228,0.94); margin: 30px 0 38px; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; }
 
@@ -403,6 +402,18 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
 .cal-ev .ev-place-link { text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .cal-ev .ev-place-link:hover { color: #fff; }
 .cal-ev svg.i { width: 13px; height: 13px; flex: none; stroke: currentColor; fill: none; }
+
+.cal-ev.has-desc, .cal-mev.has-desc { cursor: pointer; }
+.cal-ev-caret { display: inline-flex; vertical-align: middle; margin-left: 5px; opacity: 0.75; transition: transform var(--dur) var(--ease-out); }
+.cal-ev-caret.open { transform: rotate(180deg); }
+.cal-ev-caret svg.i { width: 12px; height: 12px; stroke: currentColor; fill: none; }
+.cal-ev-desc { margin-top: 9px; padding-top: 9px; border-top: 1px solid rgba(244,236,221,0.28); font-size: 12px; line-height: 1.4; color: rgba(244,236,221,0.92); white-space: pre-wrap; }
+.cal-mev .cal-ev-desc { margin-top: 6px; padding-top: 6px; font-size: 11px; }
+
+.cal-monthnav { display: inline-flex; align-items: center; gap: 10px; }
+.cal-navbtn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; font-size: 20px; line-height: 1; color: var(--text-body); border: var(--border-w) solid var(--border-soft); border-radius: var(--radius-pill); background: var(--cream); transition: background var(--dur), color var(--dur); cursor: pointer; }
+.cal-navbtn:hover:not(:disabled) { color: var(--runish-red); border-color: var(--runish-red); }
+.cal-navbtn:disabled { opacity: 0.35; cursor: default; }
 
 .cal-rest { margin: auto 0; display: flex; flex-direction: column; align-items: center; gap: 7px; color: var(--text-faint); opacity: 0.7; }
 .cal-rest .dash { width: 22px; height: 2px; border-radius: 2px; background: currentColor; }

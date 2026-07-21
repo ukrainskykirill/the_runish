@@ -46,6 +46,7 @@ const (
 const (
 	SettingTmplSubReminder      = "tmpl_subscription_reminder"
 	SettingTmplTrainingReminder = "tmpl_training_reminder"
+	SettingTmplTrainingSignedUp = "tmpl_training_signed_up"
 	SettingTmplWelcome          = "tmpl_bot_welcome"
 	SettingTmplLoginDone        = "tmpl_bot_login_done"
 	SettingTmplPhoneAsk         = "tmpl_bot_phone_ask"
@@ -66,6 +67,7 @@ type MessageTemplateDef struct {
 var messageTemplates = []MessageTemplateDef{
 	{SettingTmplSubReminder, "Напоминание об окончании подписки", "⏳ Подписка «{title}» истекает через {left}.\nЧтобы продлить — перейдите по ссылке: {url}", "{title} {left} {hours} {url}"},
 	{SettingTmplTrainingReminder, "Напоминание о тренировке", "🏃 Напоминание о тренировке!\n\n«{title}»\n📅 {date} в {time}\n📍 {place}\n\nРасписание и отмена записи: {url}", "{title} {date} {time} {place} {url}"},
+	{SettingTmplTrainingSignedUp, "Запись на тренировку подтверждена", "✅ Вы зарегистрированы на тренировку «{title}»\n📅 {date} в {time}\n📍 {place}", "{title} {date} {time} {place}"},
 	{SettingTmplWelcome, "Приветствие (/start без входа)", "✅ Вы подключили уведомления The Runish.", "{site}"},
 	{SettingTmplLoginDone, "Вход выполнен (/start со ссылкой)", "✅ Готово! Возвращайтесь на сайт — вход произойдёт автоматически.", "{site}"},
 	{SettingTmplPhoneAsk, "Запрос номера телефона", "📱 Чтобы записываться и оплачивать, поделись номером телефона — он нужен для чека.", "—"},

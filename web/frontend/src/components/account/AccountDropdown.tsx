@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 import { formatDate } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
-import { TELEGRAM_LINKS } from '../../lib/constants';
+import { CLUB_PHOTOS_URL, TELEGRAM_LINKS } from '../../lib/constants';
 import { getInitials } from '../../lib/format';
-import { FlagIcon, ListIcon, LogoutIcon, SupportIcon, UserIcon } from '../icons';
+import { ImageIcon, LogoutIcon, SupportIcon, UserIcon } from '../icons';
 
 interface AccountDropdownProps {
   open: boolean;
@@ -53,17 +53,13 @@ export function AccountDropdown({ open, onClose }: AccountDropdownProps) {
           <UserIcon className="i i-sm" />
           Личный кабинет
         </Link>
-        <Link className="pf-link" to="/runners" onClick={onClose}>
-          <ListIcon className="i i-sm" />
-          Тренировки и подписки
-        </Link>
-        <Link className="pf-link" to="/news" onClick={onClose}>
-          <FlagIcon className="i i-sm" />
-          Новости клуба
-        </Link>
         <a className="pf-link" href={TELEGRAM_LINKS.support} target="_blank" rel="noopener noreferrer">
           <SupportIcon className="i i-sm" />
           Поддержка
+        </a>
+        <a className="pf-link" href={CLUB_PHOTOS_URL} target="_blank" rel="noopener noreferrer">
+          <ImageIcon className="i i-sm" />
+          Фото клуба
         </a>
         <button className="pf-link out" onClick={handleLogout}>
           <LogoutIcon className="i i-sm" />

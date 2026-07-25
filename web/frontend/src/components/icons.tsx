@@ -114,6 +114,16 @@ export function FlagIcon(props: IconProps) {
   return base(props, <path d="M5 4h14v16l-3-2-2 2-2-2-2 2-2-2-3 2z" />);
 }
 
+export function ImageIcon(props: IconProps) {
+  return base(props, (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <circle cx="8.5" cy="10" r="1.5" />
+      <path d="M21 16l-5-5-7 7" />
+    </>
+  ));
+}
+
 export function SupportIcon(props: IconProps) {
   return base(props, (
     <>

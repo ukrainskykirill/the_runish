@@ -3,3 +3,5 @@ export const TELEGRAM_LINKS = {
   chat: 'https://t.me/therunish_chat',
   support: 'https://t.me/therunish_support',
 };
+
+export const CLUB_PHOTOS_URL = '#';

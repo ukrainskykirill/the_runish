@@ -93,7 +93,7 @@ export function HomePage() {
             </p>
             <div className="hero-actions">
               <a className="btn btn-on-red" href="#runners">
-                Выбрать подписку
+                Купить подписку
               </a>
               {!authLoading && canBookFreeLesson ? (
                 <button

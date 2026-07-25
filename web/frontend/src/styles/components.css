@@ -95,8 +95,8 @@ section { scroll-margin-top: 84px; }
 .hero-copy { max-width: 640px; }
 .hero-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: rgba(244,236,221,0.92); margin-bottom: 28px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; font-size: 13px; }
 .hero-eyebrow .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--cream-light); }
-.hero h1 { font-size: clamp(52px, 7vw, 118px); line-height: 0.98; }
-.hero p.lead { max-width: 500px; font-size: 21px; line-height: 1.45; color: rgba(248,240,228,0.94); margin: 30px 0 38px; }
+.hero h1 { font-size: clamp(40px, 5vw, 84px); line-height: 0.98; }
+.hero p.lead { font-size: 21px; line-height: 1.45; color: rgba(248,240,228,0.94); margin: 30px 0 38px; white-space: nowrap; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; }
 
 /* hero video — full-bleed right, dissolves into red */
@@ -478,6 +478,7 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
   .hero-mark { height: 56px; margin-bottom: 16px; }
 }
 @media (max-width: 640px) {
+  .hero p.lead { white-space: normal; }
   .feat-grid, .news-grid, .merch-grid, .tg-grid { grid-template-columns: 1fr; }
   .hero-in { padding-top: 56px; padding-bottom: 0; }
   .sec { padding: 56px 0; }

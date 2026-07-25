@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
+import { api, formatPrice } from '../api/client';
 import type { Training } from '../api/types';
 import logoEmblem from '../assets/logo-emblem.png';
 import { HeroVideo } from '../components/HeroVideo';
@@ -10,8 +10,7 @@ import { MerchCard } from '../components/cards/MerchCard';
 import { NewsCard } from '../components/cards/NewsCard';
 import { ServiceCard } from '../components/cards/ServiceCard';
 import { TelegramCard } from '../components/cards/TelegramCard';
-import { Marquee } from '../components/Marquee';
-import { PromoCounter } from '../components/PromoCounter';
+import { SubscribeBanner } from '../components/SubscribeBanner';
 import { NewsModal } from '../components/news/NewsModal';
 import { ScheduleCalendar } from '../components/schedule/ScheduleCalendar';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +24,7 @@ const EMPTY_TRAININGS: Training[] = [];
 
 export function HomePage() {
   const { add } = useCart();
-  const { user, canBookFreeLesson, canChooseSubscription, loading: authLoading, refresh } = useAuth();
+  const { user, canBookFreeLesson, loading: authLoading, refresh } = useAuth();
   const { showToast } = useUI();
   const { data: homeData } = useAsync(() => api.home(), []);
   const [freeLessonBusy, setFreeLessonBusy] = useState(false);
@@ -35,10 +34,8 @@ export function HomePage() {
   const news = homeData?.news ?? [];
   const merch = homeData?.merch ?? [];
   const trainings = homeData?.trainings ?? EMPTY_TRAININGS;
-  const promoActive = homeData?.promo_active ?? false;
-  const promoPaid = homeData?.promo_paid ?? 0;
-  const promoLimit = homeData?.promo_limit ?? 30;
-  const promoLeft = Math.max(0, promoLimit - promoPaid);
+  const subscription = services.find((s) => s.kind === 'subscription');
+  const subPrice = subscription ? formatPrice(subscription.price_kop) : '';
 
   async function handleFreeLessonClick() {
     if (freeLessonBusy) return;
@@ -92,15 +89,12 @@ export function HomePage() {
               <h1 className="d1">Беговой клуб</h1>
             </div>
             <p className="lead">
-              Сообщество людей, для которых бег — это кайф, а не каторга. Тренировки с
-              тренерами и тёплая компания. Присоединяйся.
+              Все тренировки в одной подписке{subPrice ? ` за ${subPrice}/мес` : ''}
             </p>
             <div className="hero-actions">
-              {!authLoading && canChooseSubscription ? (
-                <a className="btn btn-on-red" href="#runners">
-                  Выбрать подписку
-                </a>
-              ) : null}
+              <a className="btn btn-on-red" href="#runners">
+                Выбрать подписку
+              </a>
               {!authLoading && canBookFreeLesson ? (
                 <button
                   className="btn btn-outline-red"
@@ -119,8 +113,6 @@ export function HomePage() {
           <HeroVideo />
         </div>
       </section>
-
-      <Marquee promoActive={promoActive} left={promoLeft} />
 
       <section className="sec alt" id="about">
         <div className="wrap">
@@ -152,17 +144,22 @@ export function HomePage() {
           <div className="sec-head between">
             <div>
               <div className="eb">Тренировки и подписки</div>
-              <h2 className="d2">Выбери формат</h2>
+              <h2 className="d2">Подписка на бег</h2>
               <p>
-                Начни с бесплатного пробного занятия. Для подписок нужно один раз оплатить
-                вступительный взнос — дальше выбирай формат и оплачивай онлайн.
+                Подписка «The Runish Community» — это формат абонемента, по которому ты можешь
+                посещать все тренировки клуба и заниматься по общему тренировочному плану.
               </p>
             </div>
             <Link className="btn btn-ghost btn-sm" to="/runners">
               Все тренировки
             </Link>
           </div>
-          <PromoCounter paid={promoPaid} limit={promoLimit} active={promoActive} />
+          <SubscribeBanner
+            price={subPrice}
+            onBuy={() => {
+              if (subscription) add(subscription.id);
+            }}
+          />
           <EntryFeeNotice />
           <div className="cat-grid">
             {services.map((service) => (

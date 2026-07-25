@@ -1,7 +1,6 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-// EntryFeeNotice — объяснение порядка покупки: сначала разовый вступительный взнос,
-// потом подписка. Прячется, если у вошедшего пользователя взнос уже оплачен.
 export function EntryFeeNotice() {
   const { user } = useAuth();
   if (user?.entry_fee_paid) return null;
@@ -10,7 +9,7 @@ export function EntryFeeNotice() {
     <div className="entry-notice">
       <div className="en-head">
         <span className="en-badge">Как начать</span>
-        <h3>Сначала — вступление в клуб</h3>
+        <h3>Вступление в клуб</h3>
       </div>
       <p className="en-lead">
         Вступительный взнос оплачивается <b>один раз</b> и открывает доступ ко всем подпискам клуба.
@@ -20,29 +19,33 @@ export function EntryFeeNotice() {
         <li>
           <span className="en-num">1</span>
           <div>
-            <b>Оплати вступительный взнос</b>
-            <span>Разово, при первом оформлении</span>
+            <b>Авторизуйся через Telegram</b>
+            <Link to="/auth/telegram" className="en-reg-link">
+              Регистрация
+            </Link>
           </div>
         </li>
         <li>
           <span className="en-num">2</span>
           <div>
-            <b>Оформи подписку</b>
-            <span>После взноса она станет доступной</span>
+            <b>Оплати вступительный взнос</b>
+            <span>Единоразовый платеж при вступлении в клуб</span>
           </div>
         </li>
         <li>
           <span className="en-num">3</span>
           <div>
-            <b>Тренируйся</b>
-            <span>Тренировки и сообщество</span>
+            <b>Оформи подписку</b>
+            <span>Она станет доступной после вступления</span>
+          </div>
+        </li>
+        <li>
+          <span className="en-num">4</span>
+          <div>
+            <b>Клубные тренировки и онлайн-план</b>
           </div>
         </li>
       </ol>
-      <p className="en-tip">
-        💡 Хочешь начать сразу — возьми <b>«Старт в клуб»</b>: вступительный взнос и первая подписка
-        одним пакетом, выгоднее, чем оплачивать по отдельности.
-      </p>
     </div>
   );
 }

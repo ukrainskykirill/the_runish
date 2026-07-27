@@ -4,4 +4,4 @@ export const TELEGRAM_LINKS = {
   support: 'https://t.me/therunish_support',
 };
 
-export const CLUB_PHOTOS_URL = '#';
+export const CLUB_PHOTOS_URL = 'https://vk.ru/albums-232024155';

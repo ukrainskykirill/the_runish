@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, formatPrice } from '../api/client';
 import type { Training } from '../api/types';
-import logoEmblem from '../assets/logo-emblem.png';
+import logoWordmark from '../assets/logo-wordmark.png';
 import { HeroVideo } from '../components/HeroVideo';
 import { EntryFeeNotice } from '../components/EntryFeeNotice';
 import { FeatureCard } from '../components/cards/FeatureCard';
@@ -24,7 +24,7 @@ const EMPTY_TRAININGS: Training[] = [];
 
 export function HomePage() {
   const { add } = useCart();
-  const { user, canBookFreeLesson, loading: authLoading, refresh } = useAuth();
+  const { user, subscriptions, canBookFreeLesson, loading: authLoading, refresh } = useAuth();
   const { showToast } = useUI();
   const { data: homeData } = useAsync(() => api.home(), []);
   const [freeLessonBusy, setFreeLessonBusy] = useState(false);
@@ -36,6 +36,7 @@ export function HomePage() {
   const trainings = homeData?.trainings ?? EMPTY_TRAININGS;
   const subscription = services.find((s) => s.kind === 'subscription');
   const subPrice = subscription ? formatPrice(subscription.price_kop) : '';
+  const hasActiveSub = subscriptions.length > 0;
 
   async function handleFreeLessonClick() {
     if (freeLessonBusy) return;
@@ -85,16 +86,18 @@ export function HomePage() {
         <div className="wrap hero-in">
           <div className="hero-copy">
             <div className="hero-title">
-              <img className="hero-mark" src={logoEmblem} alt="The Runish" />
+              <img className="hero-mark" src={logoWordmark} alt="The Runish — Рожденные двигаться" />
               <h1 className="d1">Беговой клуб</h1>
             </div>
             <p className="lead">
               Все тренировки в одной подписке{subPrice ? ` за ${subPrice}/мес` : ''}
             </p>
             <div className="hero-actions">
-              <a className="btn btn-on-red" href="#runners">
-                Купить подписку
-              </a>
+              {!hasActiveSub ? (
+                <a className="btn btn-on-red" href="#runners">
+                  Купить подписку
+                </a>
+              ) : null}
               {!authLoading && canBookFreeLesson ? (
                 <button
                   className="btn btn-outline-red"
@@ -154,12 +157,14 @@ export function HomePage() {
               Все тренировки
             </Link>
           </div>
-          <SubscribeBanner
-            price={subPrice}
-            onBuy={() => {
-              if (subscription) add(subscription.id);
-            }}
-          />
+          {!hasActiveSub ? (
+            <SubscribeBanner
+              price={subPrice}
+              onBuy={() => {
+                if (subscription) add(subscription.id);
+              }}
+            />
+          ) : null}
           <EntryFeeNotice />
           <div className="cat-grid">
             {services.map((service) => (

@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, formatPrice } from '../api/client';
-import type { Training } from '../api/types';
 import logoWordmark from '../assets/logo-wordmark.png';
 import { HeroVideo } from '../components/HeroVideo';
 import { EntryFeeNotice } from '../components/EntryFeeNotice';
@@ -20,12 +19,11 @@ import { BoltIcon, BoxIcon, CommunityIcon } from '../components/icons';
 import { TELEGRAM_LINKS } from '../lib/constants';
 import { useAsync } from '../lib/useAsync';
 
-const EMPTY_TRAININGS: Training[] = [];
-
 export function HomePage() {
   const { add } = useCart();
   const { user, subscriptions, canBookFreeLesson, loading: authLoading, refresh } = useAuth();
   const { showToast } = useUI();
+  const navigate = useNavigate();
   const { data: homeData } = useAsync(() => api.home(), []);
   const [freeLessonBusy, setFreeLessonBusy] = useState(false);
   const [selectedNewsId, setSelectedNewsId] = useState<number | null>(null);
@@ -33,13 +31,16 @@ export function HomePage() {
   const services = homeData?.services ?? [];
   const news = homeData?.news ?? [];
   const merch = homeData?.merch ?? [];
-  const trainings = homeData?.trainings ?? EMPTY_TRAININGS;
   const subscription = services.find((s) => s.kind === 'subscription');
   const subPrice = subscription ? formatPrice(subscription.price_kop) : '';
   const hasActiveSub = subscriptions.length > 0;
 
   async function handleFreeLessonClick() {
     if (freeLessonBusy) return;
+    if (user) {
+      document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     setFreeLessonBusy(true);
     const botWindow = window.open('about:blank', '_blank');
     try {
@@ -57,7 +58,7 @@ export function HomePage() {
         window.location.href = botURL;
       }
 
-      if (!user && start.nonce) {
+      if (start.nonce) {
         const deadline = Date.now() + 10 * 60 * 1000;
         while (Date.now() < deadline) {
           await new Promise((resolve) => window.setTimeout(resolve, 2000));
@@ -66,6 +67,7 @@ export function HomePage() {
             await api.authTelegramComplete(start.nonce);
             await refresh();
             showToast('Вы вошли через Telegram');
+            navigate('/survey');
             return;
           }
           if (status === 'expired') return;
@@ -152,7 +154,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <ScheduleCalendar trainings={trainings} />
+      <ScheduleCalendar />
 
       <section className="sec alt" id="runners">
         <div className="wrap">

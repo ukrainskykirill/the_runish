@@ -13,7 +13,7 @@ export function SchedulePage() {
       </section>
       <section className="sec">
         <div className="wrap">
-          <ScheduleBoard enableViews />
+          <ScheduleBoard />
         </div>
       </section>
       <section className="sec alt">

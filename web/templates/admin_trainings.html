@@ -8,8 +8,9 @@
     <thead>
         <tr>
             <th>ID</th>
-            <th>День</th>
+            <th>Дата</th>
             <th>Время</th>
+            <th>Тип</th>
             <th>Название</th>
             <th>Место</th>
             <th>Порядок</th>
@@ -21,8 +22,9 @@
         {{range .Trainings}}
         <tr>
             <td>{{.ID}}</td>
-            <td>{{weekday .Weekday}}</td>
+            <td style="white-space:nowrap">{{.TrainingDate}} <span style="color:#9ca3af">({{weekday .Weekday}})</span></td>
             <td>{{.StartTime}}</td>
+            <td>{{if eq .Kind "sunday_runish"}}Sunday Runish{{else}}Регулярная{{end}}</td>
             <td>{{.Title}}</td>
             <td>{{.Place}}</td>
             <td>{{.SortOrder}}</td>
@@ -35,7 +37,7 @@
             </td>
         </tr>
         {{else}}
-        <tr><td colspan="8" style="text-align:center;color:#9ca3af;padding:2rem">Тренировок пока нет</td></tr>
+        <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:2rem">Тренировок пока нет</td></tr>
         {{end}}
     </tbody>
 </table>

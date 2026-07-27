@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Training } from '../../api/types';
-import { ErrorState } from '../LoadState';
+import type { TrainingOccurrence } from '../../api/types';
+import { useAuth } from '../../context/AuthContext';
 import { useAsync } from '../../lib/useAsync';
+import { ErrorState } from '../LoadState';
+import { occKey, resolveRegMode, useTrainingRegister } from './registerAction';
 
 const DOW = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS_GEN = [
@@ -23,12 +25,17 @@ function pad2(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
 }
 
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function parseYmd(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function sameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 function ClockIcon() {
@@ -58,40 +65,102 @@ function ChevronIcon() {
 }
 
 interface EventProps {
-  t: Training;
+  occ: TrainingOccurrence;
   variant: 'week' | 'month';
   expanded: boolean;
   onToggle: () => void;
+  busy: boolean;
+  onRegister: () => void;
+  onCancel: () => void;
 }
 
-// Одно событие в расписании. Если у тренировки есть описание — клик раскрывает его,
-// иначе ведёт в каталог (как раньше).
-function ScheduleEvent({ t, variant, expanded, onToggle }: EventProps) {
+function CalEventFoot({ occ, busy, onRegister, onCancel }: Omit<EventProps, 'variant' | 'expanded' | 'onToggle'>) {
+  const { user, canBookFreeLesson } = useAuth();
+  const mode = resolveRegMode(occ, user, canBookFreeLesson);
+  const stop = (e: MouseEvent) => e.stopPropagation();
+
+  switch (mode) {
+    case 'registered':
+      return (
+        <div className="cal-ev-foot" onClick={stop}>
+          <span className="cal-reg-tag">✓ Записан</span>
+          <button className="cal-reg-btn ghost" disabled={busy} onClick={(e) => { stop(e); onCancel(); }}>
+            Отменить
+          </button>
+        </div>
+      );
+    case 'cancelled':
+      return <div className="cal-ev-foot"><span className="cal-reg-note">Отменено</span></div>;
+    case 'full':
+      return <div className="cal-ev-foot"><span className="cal-reg-note">Мест нет</span></div>;
+    case 'needsub':
+      return (
+        <div className="cal-ev-foot" onClick={stop}>
+          <Link className="cal-reg-btn ghost" to="/runners">Нужна подписка</Link>
+        </div>
+      );
+    case 'free':
+      return (
+        <div className="cal-ev-foot" onClick={stop}>
+          <button className="cal-reg-btn" disabled={busy} onClick={(e) => { stop(e); onRegister(); }}>
+            Первая — бесплатно 🎉
+          </button>
+        </div>
+      );
+    default:
+      return (
+        <div className="cal-ev-foot" onClick={stop}>
+          <button className="cal-reg-btn" disabled={busy} onClick={(e) => { stop(e); onRegister(); }}>
+            Записаться
+          </button>
+        </div>
+      );
+  }
+}
+
+function ScheduleEvent({ occ, variant, expanded, onToggle, busy, onRegister, onCancel }: EventProps) {
   const cls = variant === 'week' ? 'cal-ev' : 'cal-mev';
   const tCls = variant === 'week' ? 'ev-t' : 'mev-t';
   const timeCls = variant === 'week' ? 'ev-time' : 'mev-time';
   const placeCls = variant === 'week' ? 'ev-place' : 'mev-place';
-  const hasDesc = !!t.description;
+  const hasDesc = !!occ.description;
 
-  const placeNode = t.place_url ? (
+  const placeNode = occ.place_url ? (
     <span
       className="ev-place-link"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        window.open(t.place_url!, '_blank', 'noopener,noreferrer');
+        window.open(occ.place_url!, '_blank', 'noopener,noreferrer');
       }}
     >
-      {t.place}
+      {occ.place}
     </span>
   ) : (
-    t.place
+    occ.place
   );
 
-  const inner = (
-    <>
+  return (
+    <div
+      className={cls + (hasDesc ? ' has-desc' : '') + (expanded ? ' open' : '')}
+      role={hasDesc ? 'button' : undefined}
+      tabIndex={hasDesc ? 0 : undefined}
+      aria-expanded={hasDesc ? expanded : undefined}
+      onClick={hasDesc ? onToggle : undefined}
+      onKeyDown={
+        hasDesc
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onToggle();
+              }
+            }
+          : undefined
+      }
+    >
       <div className={tCls}>
-        {t.title}
+        {occ.kind === 'sunday_runish' ? <span className="cal-ev-badge">SR</span> : null}
+        {occ.title}
         {hasDesc && (
           <span className={'cal-ev-caret' + (expanded ? ' open' : '')}>
             <ChevronIcon />
@@ -100,95 +169,74 @@ function ScheduleEvent({ t, variant, expanded, onToggle }: EventProps) {
       </div>
       <div className={timeCls}>
         <ClockIcon />
-        {t.start_time}
+        {occ.start_time}
       </div>
       <div className={placeCls}>
         <PinIcon />
         {placeNode}
       </div>
-      {hasDesc && expanded && <div className="cal-ev-desc">{t.description}</div>}
-    </>
-  );
-
-  if (hasDesc) {
-    return (
-      <div
-        className={cls + ' has-desc' + (expanded ? ' open' : '')}
-        role="button"
-        tabIndex={0}
-        aria-expanded={expanded}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
-      >
-        {inner}
-      </div>
-    );
-  }
-  return (
-    <Link className={cls} to="/runners">
-      {inner}
-    </Link>
+      {hasDesc && expanded && <div className="cal-ev-desc">{occ.description}</div>}
+      <CalEventFoot occ={occ} busy={busy} onRegister={onRegister} onCancel={onCancel} />
+    </div>
   );
 }
 
-type CalView = 'week' | 'month';
-
-interface ScheduleBoardProps {
-  trainings?: Training[];
-  enableViews?: boolean;
-}
-
-export function ScheduleBoard({ trainings: providedTrainings, enableViews = false }: ScheduleBoardProps) {
-  const [view, setView] = useState<CalView>('week');
+export function ScheduleBoard() {
+  const { user, refresh } = useAuth();
+  const [view, setView] = useState<'week' | 'month'>('week');
+  const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const shouldFetch = providedTrainings === undefined;
-  const { data, loading, error } = useAsync(
-    () => (shouldFetch ? api.schedule() : Promise.resolve({ trainings: providedTrainings })),
-    [shouldFetch, providedTrainings],
-  );
-  const trainings = data?.trainings ?? providedTrainings ?? [];
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const toggle = (id: number) => setExpandedId((cur) => (cur === id ? null : id));
+  const { data, loading, error } = useAsync(() => api.trainingsUpcoming(), [reloadKey, user?.id]);
+  const occurrences = data?.occurrences ?? [];
+
+  async function reload() {
+    setReloadKey((k) => k + 1);
+    await refresh();
+  }
+  const { busyKey, handleRegister, handleCancel } = useTrainingRegister(reload);
+  const toggle = (key: string) => setExpandedKey((cur) => (cur === key ? null : key));
+
+  const byDate = new Map<string, TrainingOccurrence[]>();
+  for (const o of occurrences) {
+    const arr = byDate.get(o.session_date);
+    if (arr) arr.push(o);
+    else byDate.set(o.session_date, [o]);
+  }
 
   const today = new Date();
-  const todayIso = isoWeekday(today);
-  const monday = new Date(today);
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(today.getDate() - (todayIso - 1));
-
-  const byDay = new Map<number, Training[]>();
-  for (const t of trainings) {
-    const arr = byDay.get(t.weekday);
-    if (arr) arr.push(t);
-    else byDay.set(t.weekday, [t]);
+  today.setHours(0, 0, 0, 0);
+  let lastStr = ymd(today);
+  for (const o of occurrences) {
+    if (o.session_date > lastStr) lastStr = o.session_date;
   }
+  const lastDate = parseYmd(lastStr);
 
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const wd = i + 1;
+  const curMonday = new Date(today);
+  curMonday.setDate(today.getDate() - (isoWeekday(today) - 1));
+  const monday = new Date(curMonday);
+  monday.setDate(curMonday.getDate() + weekOffset * 7);
+  const weekCells = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
     return {
-      wd,
       date,
-      isToday: wd === todayIso,
-      isWeekend: wd >= 6,
-      items: byDay.get(wd) ?? [],
+      isToday: sameDay(date, today),
+      isWeekend: isoWeekday(date) >= 6,
+      items: byDate.get(ymd(date)) ?? [],
     };
   });
-
-  const sunday = days[6].date;
+  const sunday = weekCells[6].date;
   const weekRange =
     monday.getMonth() === sunday.getMonth()
       ? `${monday.getDate()} — ${sunday.getDate()} ${MONTHS_GEN[sunday.getMonth()]}`
       : `${monday.getDate()} ${MONTHS_GEN[monday.getMonth()]} — ${sunday.getDate()} ${MONTHS_GEN[sunday.getMonth()]}`;
+  const lastMonday = new Date(lastDate);
+  lastMonday.setDate(lastDate.getDate() - (isoWeekday(lastDate) - 1));
+  const maxWeekOffset = Math.max(0, Math.round((lastMonday.getTime() - curMonday.getTime()) / (7 * 86400000)));
 
-  // Отображаемый месяц (0 = текущий), с проекцией недельного шаблона на все недели.
   const monthFirst = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
   const mYear = monthFirst.getFullYear();
   const mMonth = monthFirst.getMonth();
@@ -199,93 +247,98 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
   const monthCells = Array.from({ length: cellsCount }, (_, i) => {
     const date = new Date(gridStart);
     date.setDate(gridStart.getDate() + i);
-    const wd = isoWeekday(date);
     const inMonth = date.getMonth() === mMonth;
     return {
       date,
-      wd,
       inMonth,
       isToday: sameDay(date, today),
-      items: inMonth ? byDay.get(wd) ?? [] : [],
+      items: inMonth ? byDate.get(ymd(date)) ?? [] : [],
     };
   });
+  const maxMonthOffset = Math.max(
+    0,
+    (lastDate.getFullYear() - today.getFullYear()) * 12 + (lastDate.getMonth() - today.getMonth()),
+  );
 
-  const minMonthOffset = -today.getMonth();
-  const maxMonthOffset = 11 - today.getMonth();
-
-  const headTitle = view === 'month' ? `${MONTHS_NOM[mMonth]} ${mYear}` : 'Эта неделя';
-  const headRange = view === 'month' ? '' : weekRange;
+  const isWeek = view === 'week';
+  const headTitle = isWeek ? (weekOffset === 0 ? 'Эта неделя' : 'Неделя') : `${MONTHS_NOM[mMonth]} ${mYear}`;
+  const canPrev = isWeek ? weekOffset > 0 : monthOffset > 0;
+  const canNext = isWeek ? weekOffset < maxWeekOffset : monthOffset < maxMonthOffset;
+  const goPrev = () => (isWeek ? setWeekOffset((w) => Math.max(0, w - 1)) : setMonthOffset((m) => Math.max(0, m - 1)));
+  const goNext = () =>
+    isWeek ? setWeekOffset((w) => Math.min(maxWeekOffset, w + 1)) : setMonthOffset((m) => Math.min(maxMonthOffset, m + 1));
 
   return (
     <div className="cal-board">
       <div className="cal-strip speedlines" />
       <div className="cal-board-head">
         <div className="wk">
-          {view === 'month' && enableViews ? (
-            <div className="cal-monthnav">
-              <button
-                type="button"
-                className="cal-navbtn"
-                aria-label="Предыдущий месяц"
-                disabled={monthOffset <= minMonthOffset}
-                onClick={() => setMonthOffset((m) => Math.max(m - 1, minMonthOffset))}
-              >
-                ‹
-              </button>
-              <span className="t">{headTitle}</span>
-              <button
-                type="button"
-                className="cal-navbtn"
-                aria-label="Следующий месяц"
-                disabled={monthOffset >= maxMonthOffset}
-                onClick={() => setMonthOffset((m) => Math.min(m + 1, maxMonthOffset))}
-              >
-                ›
-              </button>
-            </div>
-          ) : (
-            <>
-              <span className="t">{headTitle}</span>
-              {headRange ? <span className="r">{headRange}</span> : null}
-            </>
-          )}
+          <div className="cal-monthnav">
+            <button type="button" className="cal-navbtn" aria-label="Назад" disabled={!canPrev} onClick={goPrev}>
+              ‹
+            </button>
+            <span className="t">{headTitle}</span>
+            <button type="button" className="cal-navbtn" aria-label="Вперёд" disabled={!canNext} onClick={goNext}>
+              ›
+            </button>
+          </div>
+          {isWeek ? <span className="r">{weekRange}</span> : null}
         </div>
-        {enableViews ? (
-          <div className="cal-views" role="tablist" aria-label="Вид календаря">
-            <button
-              type="button"
-              className={'cal-view-btn' + (view === 'week' ? ' active' : '')}
-              onClick={() => setView('week')}
-            >
-              Неделя
-            </button>
-            <button
-              type="button"
-              className={'cal-view-btn' + (view === 'month' ? ' active' : '')}
-              onClick={() => setView('month')}
-            >
-              Месяц
-            </button>
-          </div>
-        ) : (
-          <div className="cal-legend">
-            <span className="lg">
-              <span className="sw red" />
-              Тренировка
-            </span>
-          </div>
-        )}
+        <div className="cal-views" role="tablist" aria-label="Вид календаря">
+          <button type="button" className={'cal-view-btn' + (isWeek ? ' active' : '')} onClick={() => setView('week')}>
+            Неделя
+          </button>
+          <button type="button" className={'cal-view-btn' + (!isWeek ? ' active' : '')} onClick={() => setView('month')}>
+            Месяц
+          </button>
+        </div>
       </div>
 
-      {shouldFetch && loading ? (
+      {loading ? (
         <div className="cal-loading">
           {Array.from({ length: 7 }, (_, i) => (
             <span className="sk" key={i} />
           ))}
         </div>
-      ) : shouldFetch && error ? (
+      ) : error ? (
         <ErrorState message="Не удалось загрузить расписание" />
-      ) : view === 'month' ? (
+      ) : isWeek ? (
+        <div className="cal">
+          {weekCells.map((d) => (
+            <div
+              key={ymd(d.date)}
+              className={'cal-day' + (d.isToday ? ' today' : '') + (d.isWeekend ? ' weekend' : '') + (d.items.length ? ' has' : '')}
+            >
+              <div className="cal-colhead">
+                <div className="dow">{DOW[isoWeekday(d.date) - 1]}</div>
+                <div className="dnum">{pad2(d.date.getDate())}.{pad2(d.date.getMonth() + 1)}</div>
+                {d.isToday && <span className="cal-today-tag">Сегодня</span>}
+              </div>
+              <div className="events">
+                {d.items.length === 0 ? (
+                  <div className="cal-rest">
+                    <span className="dash" />
+                    <span className="lbl">Отдых</span>
+                  </div>
+                ) : (
+                  d.items.map((o) => (
+                    <ScheduleEvent
+                      key={occKey(o)}
+                      occ={o}
+                      variant="week"
+                      expanded={expandedKey === occKey(o)}
+                      onToggle={() => toggle(occKey(o))}
+                      busy={busyKey === occKey(o)}
+                      onRegister={() => handleRegister(o)}
+                      onCancel={() => handleCancel(o)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
         <div className="cal-month">
           {DOW.map((d, i) => (
             <div key={`h${i}`} className={'cal-mhead' + (i >= 5 ? ' weekend' : '')}>
@@ -295,67 +348,25 @@ export function ScheduleBoard({ trainings: providedTrainings, enableViews = fals
           {monthCells.map((c, i) => (
             <div
               key={i}
-              className={
-                'cal-mday' +
-                (c.inMonth ? '' : ' out') +
-                (c.isToday ? ' today' : '') +
-                (c.items.length ? ' has' : '')
-              }
+              className={'cal-mday' + (c.inMonth ? '' : ' out') + (c.isToday ? ' today' : '') + (c.items.length ? ' has' : '')}
             >
               <div className="cal-mnum">{c.date.getDate()}</div>
               <div className="cal-mevents">
-                {c.items.map((t) => (
+                {c.items.map((o) => (
                   <ScheduleEvent
-                    key={t.id}
-                    t={t}
+                    key={occKey(o)}
+                    occ={o}
                     variant="month"
-                    expanded={expandedId === t.id}
-                    onToggle={() => toggle(t.id)}
+                    expanded={expandedKey === occKey(o)}
+                    onToggle={() => toggle(occKey(o))}
+                    busy={busyKey === occKey(o)}
+                    onRegister={() => handleRegister(o)}
+                    onCancel={() => handleCancel(o)}
                   />
                 ))}
               </div>
             </div>
           ))}
-        </div>
-      ) : (
-        <div className="cal">
-        {days.map((d) => (
-          <div
-            key={d.wd}
-            className={
-              'cal-day' +
-              (d.isToday ? ' today' : '') +
-              (d.isWeekend ? ' weekend' : '') +
-              (d.items.length ? ' has' : '')
-            }
-          >
-            <div className="cal-colhead">
-              <div className="dow">{DOW[d.wd - 1]}</div>
-              <div className="dnum">
-                {pad2(d.date.getDate())}.{pad2(d.date.getMonth() + 1)}
-              </div>
-              {d.isToday && <span className="cal-today-tag">Сегодня</span>}
-            </div>
-            <div className="events">
-              {d.items.length === 0 ? (
-                <div className="cal-rest">
-                  <span className="dash" />
-                  <span className="lbl">Отдых</span>
-                </div>
-              ) : (
-                d.items.map((t) => (
-                  <ScheduleEvent
-                    key={t.id}
-                    t={t}
-                    variant="week"
-                    expanded={expandedId === t.id}
-                    onToggle={() => toggle(t.id)}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        ))}
         </div>
       )}
     </div>

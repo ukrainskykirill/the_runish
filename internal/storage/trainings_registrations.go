@@ -60,20 +60,16 @@ func (s *Store) RegisterForTrainingTx(ctx context.Context, userID, trainingID in
 		if err := tx.QueryRowContext(ctx, `SELECT entry_fee_paid FROM users WHERE id = $1`, userID).Scan(&entryFeePaid); err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
-		if !entryFeePaid {
-			return ErrNoEntryFee
-		}
 
 		var (
-			title, place, startHHMM string
-			weekday                 int
-			capacity                sql.NullInt64
-			isActive                bool
+			title, place, startHHMM, kind, trainingDate string
+			capacity                                    sql.NullInt64
+			isActive                                    bool
 		)
 		err := tx.QueryRowContext(ctx, `
-			SELECT title, place, to_char(start_time,'HH24:MI'), weekday, capacity, is_active
+			SELECT title, place, to_char(start_time,'HH24:MI'), kind, to_char(training_date,'YYYY-MM-DD'), capacity, is_active
 			FROM trainings WHERE id = $1`, trainingID,
-		).Scan(&title, &place, &startHHMM, &weekday, &capacity, &isActive)
+		).Scan(&title, &place, &startHHMM, &kind, &trainingDate, &capacity, &isActive)
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
 		}
@@ -84,7 +80,8 @@ func (s *Store) RegisterForTrainingTx(ctx context.Context, userID, trainingID in
 			return ErrNotFound
 		}
 
-		if isoWeekday(date) != weekday {
+		dateStr := date.Format("2006-01-02")
+		if dateStr != trainingDate {
 			return ErrPastSession
 		}
 		start, err := occurrenceStart(date, startHHMM, loc)
@@ -94,30 +91,45 @@ func (s *Store) RegisterForTrainingTx(ctx context.Context, userID, trainingID in
 		if !start.After(now) {
 			return ErrPastSession
 		}
-		dateStr := date.Format("2006-01-02")
 
-		var (
-			entID    int64
-			entQuota sql.NullInt64
-			entUsed  int
-		)
-		err = tx.QueryRowContext(ctx, `
-			SELECT e.id, e.quota, e.used
-			FROM training_entitlements e
-			WHERE e.user_id = $1 AND e.status = 'active'
-			  AND (e.valid_until IS NULL OR e.valid_until > now())
-			  AND (e.quota IS NULL OR e.used < e.quota)
-			  AND (NOT EXISTS (SELECT 1 FROM service_trainings st WHERE st.service_id = e.service_id)
-			       OR EXISTS (SELECT 1 FROM service_trainings st WHERE st.service_id = e.service_id AND st.training_id = $2))
-			ORDER BY (e.quota IS NULL) DESC, e.valid_until ASC NULLS LAST
-			FOR UPDATE
-			LIMIT 1`, userID, trainingID,
-		).Scan(&entID, &entQuota, &entUsed)
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrNoAccess
-		}
-		if err != nil {
-			return fmt.Errorf("find entitlement: %w", err)
+		// Определяем доступ и (для regular с подпиской) энтайтлмент.
+		var entID sql.NullInt64
+		if kind != "sunday_runish" {
+			var (
+				id       int64
+				entQuota sql.NullInt64
+				entUsed  int
+			)
+			err = tx.QueryRowContext(ctx, `
+				SELECT e.id, e.quota, e.used
+				FROM training_entitlements e
+				WHERE e.user_id = $1 AND e.status = 'active'
+				  AND (e.valid_until IS NULL OR e.valid_until > now())
+				  AND (e.quota IS NULL OR e.used < e.quota)
+				  AND (NOT EXISTS (SELECT 1 FROM service_trainings st WHERE st.service_id = e.service_id)
+				       OR EXISTS (SELECT 1 FROM service_trainings st WHERE st.service_id = e.service_id AND st.training_id = $2))
+				ORDER BY (e.quota IS NULL) DESC, e.valid_until ASC NULLS LAST
+				FOR UPDATE
+				LIMIT 1`, userID, trainingID,
+			).Scan(&id, &entQuota, &entUsed)
+			switch {
+			case err == nil:
+				if !entryFeePaid {
+					return ErrNoEntryFee
+				}
+				entID = sql.NullInt64{Int64: id, Valid: true}
+			case errors.Is(err, sql.ErrNoRows):
+				// Нет подписки — путь «первая бесплатная» для новичка.
+				ok, ferr := canBookFreeFirstTx(ctx, tx, userID, entryFeePaid)
+				if ferr != nil {
+					return ferr
+				}
+				if !ok {
+					return ErrNoAccess
+				}
+			default:
+				return fmt.Errorf("find entitlement: %w", err)
+			}
 		}
 
 		var sessionID int64
@@ -168,14 +180,16 @@ func (s *Store) RegisterForTrainingTx(ctx context.Context, userID, trainingID in
 		).Scan(&regID, &createdAt); err != nil {
 			return fmt.Errorf("insert registration: %w", err)
 		}
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE training_entitlements
-			SET used = used + 1,
-			    status = CASE WHEN quota IS NOT NULL AND used + 1 >= quota THEN 'exhausted' ELSE 'active' END,
-			    updated_at = now()
-			WHERE id = $1`, entID,
-		); err != nil {
-			return fmt.Errorf("spend entitlement: %w", err)
+		if entID.Valid {
+			if _, err := tx.ExecContext(ctx, `
+				UPDATE training_entitlements
+				SET used = used + 1,
+				    status = CASE WHEN quota IS NOT NULL AND used + 1 >= quota THEN 'exhausted' ELSE 'active' END,
+				    updated_at = now()
+				WHERE id = $1`, entID.Int64,
+			); err != nil {
+				return fmt.Errorf("spend entitlement: %w", err)
+			}
 		}
 
 		reg = domain.TrainingRegistration{
@@ -197,7 +211,7 @@ func (s *Store) CancelRegistrationTx(ctx context.Context, userID, regID int64) e
 	now := time.Now().In(loc)
 	return s.WithTx(ctx, func(tx *sql.Tx) error {
 		var (
-			entID       int64
+			entID       sql.NullInt64
 			status      string
 			sessionDate time.Time
 			startHHMM   string
@@ -233,19 +247,50 @@ func (s *Store) CancelRegistrationTx(ctx context.Context, userID, regID int64) e
 		); err != nil {
 			return fmt.Errorf("cancel registration: %w", err)
 		}
-		if _, err := tx.ExecContext(ctx, `
-			UPDATE training_entitlements
-			SET used = GREATEST(used - 1, 0),
-			    status = CASE
-			        WHEN status = 'expired' THEN 'expired'
-			        WHEN valid_until IS NOT NULL AND valid_until <= now() THEN 'expired'
-			        ELSE 'active'
-			    END,
-			    updated_at = now()
-			WHERE id = $1`, entID,
-		); err != nil {
-			return fmt.Errorf("refund entitlement: %w", err)
+		if entID.Valid {
+			if _, err := tx.ExecContext(ctx, `
+				UPDATE training_entitlements
+				SET used = GREATEST(used - 1, 0),
+				    status = CASE
+				        WHEN status = 'expired' THEN 'expired'
+				        WHEN valid_until IS NOT NULL AND valid_until <= now() THEN 'expired'
+				        ELSE 'active'
+				    END,
+				    updated_at = now()
+				WHERE id = $1`, entID.Int64,
+			); err != nil {
+				return fmt.Errorf("refund entitlement: %w", err)
+			}
 		}
 		return nil
 	})
+}
+
+// canBookFreeFirstTx — новичок без взноса, без подписок/платежей и без единой прошлой
+// записи может один раз записаться на regular-тренировку бесплатно.
+func canBookFreeFirstTx(ctx context.Context, tx *sql.Tx, userID int64, entryFeePaid bool) (bool, error) {
+	if entryFeePaid {
+		return false, nil
+	}
+	var hasPayments, hasSubs, hasRegs bool
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			EXISTS (SELECT 1 FROM payments WHERE user_id = $1 AND status = 'confirmed'),
+			EXISTS (SELECT 1 FROM subscriptions WHERE user_id = $1),
+			EXISTS (SELECT 1 FROM training_registrations WHERE user_id = $1)`,
+		userID,
+	).Scan(&hasPayments, &hasSubs, &hasRegs); err != nil {
+		return false, fmt.Errorf("check free-first eligibility: %w", err)
+	}
+	return !hasPayments && !hasSubs && !hasRegs, nil
+}
+
+func (s *Store) HasAnyTrainingRegistrationByUser(ctx context.Context, userID int64) (bool, error) {
+	var exists bool
+	if err := s.db.QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM training_registrations WHERE user_id = $1)`, userID,
+	).Scan(&exists); err != nil {
+		return false, fmt.Errorf("has training registration: %w", err)
+	}
+	return exists, nil
 }

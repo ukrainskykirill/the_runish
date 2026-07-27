@@ -19,17 +19,18 @@
     </div>
 
     <div class="form-group">
-        <label>День недели *</label>
-        <select name="weekday" required>
-            {{$cur := 0}}{{if .Training}}{{$cur = .Training.Weekday}}{{end}}
-            <option value="1" {{if eq $cur 1}}selected{{end}}>Понедельник</option>
-            <option value="2" {{if eq $cur 2}}selected{{end}}>Вторник</option>
-            <option value="3" {{if eq $cur 3}}selected{{end}}>Среда</option>
-            <option value="4" {{if eq $cur 4}}selected{{end}}>Четверг</option>
-            <option value="5" {{if eq $cur 5}}selected{{end}}>Пятница</option>
-            <option value="6" {{if eq $cur 6}}selected{{end}}>Суббота</option>
-            <option value="7" {{if eq $cur 7}}selected{{end}}>Воскресенье</option>
+        <label>Тип *</label>
+        <select name="kind" required>
+            {{$k := "regular"}}{{if .Training}}{{$k = .Training.Kind}}{{end}}
+            <option value="regular" {{if eq $k "regular"}}selected{{end}}>Регулярная тренировка</option>
+            <option value="sunday_runish" {{if eq $k "sunday_runish"}}selected{{end}}>Sunday Runish</option>
         </select>
+        <small style="color:#6b7280;margin-top:0.2rem;display:block">Sunday Runish — открыта для всех авторизованных без подписки.</small>
+    </div>
+
+    <div class="form-group">
+        <label>Дата *</label>
+        <input type="date" name="training_date" required value="{{if .Training}}{{.Training.TrainingDate}}{{end}}">
     </div>
 
     <div class="form-group">

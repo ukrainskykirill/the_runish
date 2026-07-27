@@ -68,7 +68,12 @@ func (a *App) APIMe(w http.ResponseWriter, r *http.Request) {
 			a.logger.Error("check subscriptions", "err", err)
 			hasSubscriptions = true
 		}
-		resp.CanBookFreeLesson = !hasPayments && !user.EntryFeePaid && !hasSubscriptions
+		hasTrainingReg, err := a.store.HasAnyTrainingRegistrationByUser(r.Context(), user.ID)
+		if err != nil {
+			a.logger.Error("check training registrations", "err", err)
+			hasTrainingReg = true
+		}
+		resp.CanBookFreeLesson = !hasPayments && !user.EntryFeePaid && !hasSubscriptions && !hasTrainingReg
 
 		resp.SurveyStatus = string(domain.SurveyPending)
 		if sv, err := a.store.GetSurvey(r.Context(), user.ID); err == nil {

@@ -58,7 +58,9 @@ export interface Training {
   id: number;
   title: string;
   description?: string;
+  kind: string; // 'regular' | 'sunday_runish'
   weekday: number; // ISO: 1=Пн … 7=Вс
+  training_date: string; // "YYYY-MM-DD"
   start_time: string; // "HH:MM"
   place: string;
   place_url?: string;
@@ -71,6 +73,8 @@ export interface Training {
 export interface TrainingOccurrence {
   training_id: number;
   title: string;
+  description?: string;
+  kind: string; // 'regular' | 'sunday_runish'
   weekday: number;
   start_time: string; // "HH:MM"
   place: string;

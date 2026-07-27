@@ -22,18 +22,13 @@ func (s *Store) ListUpcomingSessions(ctx context.Context, userID int64) ([]domai
 	loc := clubLocation()
 	now := time.Now().In(loc)
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
-	horizonDays := 7 - isoWeekday(today) + 1
-	horizonEnd := today.AddDate(0, 0, horizonDays)
+	horizonEnd := today.AddDate(0, 0, s.TrainingWindowDays(ctx))
 	todayStr := today.Format("2006-01-02")
 	horizonStr := horizonEnd.Format("2006-01-02")
 
 	trainings, err := s.ListTrainings(ctx, false)
 	if err != nil {
 		return nil, err
-	}
-	byWeekday := make(map[int][]domain.Training)
-	for _, t := range trainings {
-		byWeekday[t.Weekday] = append(byWeekday[t.Weekday], t)
 	}
 
 	type sessionInfo struct {
@@ -163,43 +158,48 @@ func (s *Store) ListUpcomingSessions(ctx context.Context, userID int64) ([]domai
 	}
 
 	var result []domain.TrainingOccurrence
-	for d := 0; d < horizonDays; d++ {
-		date := today.AddDate(0, 0, d)
-		iso := isoWeekday(date)
-		for _, t := range byWeekday[iso] {
-			start, err := occurrenceStart(date, t.StartTime, loc)
-			if err != nil || !start.After(now) {
-				continue
-			}
-			ds := date.Format("2006-01-02")
-			key := occKey(t.ID, ds)
-			info, hasSession := sessions[key]
-
-			occ := domain.TrainingOccurrence{
-				TrainingID:  t.ID,
-				Title:       t.Title,
-				Weekday:     t.Weekday,
-				StartTime:   t.StartTime,
-				Place:       t.Place,
-				PlaceURL:    t.PlaceURL,
-				SessionDate: ds,
-				Capacity:    t.Capacity,
-			}
-			if hasSession {
-				occ.RegisteredCount = info.count
-				occ.Cancelled = info.status == "cancelled"
-			}
-			occ.Available = t.Capacity == nil || occ.RegisteredCount < *t.Capacity
-			if userID != 0 {
-				if rid, ok := myRegs[key]; ok {
-					occ.Registered = true
-					id := rid
-					occ.MyRegistrationID = &id
-				}
-				occ.InMyAccess, occ.QuotaLeft = accessFor(t.ID)
-			}
-			result = append(result, occ)
+	for _, t := range trainings {
+		date, err := time.ParseInLocation("2006-01-02", t.TrainingDate, loc)
+		if err != nil {
+			continue
 		}
+		if date.Before(today) || !date.Before(horizonEnd) {
+			continue
+		}
+		start, err := occurrenceStart(date, t.StartTime, loc)
+		if err != nil || !start.After(now) {
+			continue
+		}
+		ds := t.TrainingDate
+		key := occKey(t.ID, ds)
+		info, hasSession := sessions[key]
+
+		occ := domain.TrainingOccurrence{
+			TrainingID:  t.ID,
+			Title:       t.Title,
+			Description: t.Description,
+			Kind:        t.Kind,
+			Weekday:     t.Weekday,
+			StartTime:   t.StartTime,
+			Place:       t.Place,
+			PlaceURL:    t.PlaceURL,
+			SessionDate: ds,
+			Capacity:    t.Capacity,
+		}
+		if hasSession {
+			occ.RegisteredCount = info.count
+			occ.Cancelled = info.status == "cancelled"
+		}
+		occ.Available = t.Capacity == nil || occ.RegisteredCount < *t.Capacity
+		if userID != 0 {
+			if rid, ok := myRegs[key]; ok {
+				occ.Registered = true
+				id := rid
+				occ.MyRegistrationID = &id
+			}
+			occ.InMyAccess, occ.QuotaLeft = accessFor(t.ID)
+		}
+		result = append(result, occ)
 	}
 
 	sort.SliceStable(result, func(i, j int) bool {

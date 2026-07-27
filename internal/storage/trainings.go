@@ -9,7 +9,8 @@ import (
 	"therunish/internal/domain"
 )
 
-const trainingCols = `id, title, description, weekday, to_char(start_time, 'HH24:MI') AS start_time,
+const trainingCols = `id, title, description, kind, weekday, to_char(training_date, 'YYYY-MM-DD') AS training_date,
+	to_char(start_time, 'HH24:MI') AS start_time,
 	place, place_url, is_active, sort_order, capacity, created_at, updated_at`
 
 func scanTraining(sc rowScanner) (domain.Training, error) {
@@ -18,7 +19,7 @@ func scanTraining(sc rowScanner) (domain.Training, error) {
 	var placeURL sql.NullString
 	var capacity sql.NullInt64
 	if err := sc.Scan(
-		&t.ID, &t.Title, &description, &t.Weekday, &t.StartTime, &t.Place, &placeURL,
+		&t.ID, &t.Title, &description, &t.Kind, &t.Weekday, &t.TrainingDate, &t.StartTime, &t.Place, &placeURL,
 		&t.IsActive, &t.SortOrder, &capacity, &t.CreatedAt, &t.UpdatedAt,
 	); err != nil {
 		return domain.Training{}, err
@@ -36,12 +37,12 @@ func scanTraining(sc rowScanner) (domain.Training, error) {
 
 func (s *Store) CreateTraining(ctx context.Context, t *domain.Training) (int64, error) {
 	const q = `
-		INSERT INTO trainings (title, description, weekday, start_time, place, place_url, is_active, sort_order, capacity)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO trainings (title, description, kind, training_date, weekday, start_time, place, place_url, is_active, sort_order, capacity)
+		VALUES ($1, $2, $3, $4, EXTRACT(ISODOW FROM $4::date)::int, $5, $6, $7, $8, $9, $10)
 		RETURNING id`
 	var id int64
 	err := s.db.QueryRowContext(ctx, q,
-		t.Title, sql.NullString{String: t.Description, Valid: t.Description != ""}, t.Weekday, t.StartTime, t.Place, t.PlaceURL, t.IsActive, t.SortOrder, t.Capacity,
+		t.Title, sql.NullString{String: t.Description, Valid: t.Description != ""}, t.Kind, t.TrainingDate, t.StartTime, t.Place, t.PlaceURL, t.IsActive, t.SortOrder, t.Capacity,
 	).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("create training: %w", err)
@@ -52,10 +53,11 @@ func (s *Store) CreateTraining(ctx context.Context, t *domain.Training) (int64, 
 func (s *Store) UpdateTraining(ctx context.Context, t *domain.Training) error {
 	const q = `
 		UPDATE trainings
-		SET title = $1, description = $2, weekday = $3, start_time = $4, place = $5, place_url = $6, is_active = $7, sort_order = $8, capacity = $9, updated_at = now()
-		WHERE id = $10`
+		SET title = $1, description = $2, kind = $3, training_date = $4, weekday = EXTRACT(ISODOW FROM $4::date)::int,
+			start_time = $5, place = $6, place_url = $7, is_active = $8, sort_order = $9, capacity = $10, updated_at = now()
+		WHERE id = $11`
 	res, err := s.db.ExecContext(ctx, q,
-		t.Title, sql.NullString{String: t.Description, Valid: t.Description != ""}, t.Weekday, t.StartTime, t.Place, t.PlaceURL, t.IsActive, t.SortOrder, t.Capacity, t.ID,
+		t.Title, sql.NullString{String: t.Description, Valid: t.Description != ""}, t.Kind, t.TrainingDate, t.StartTime, t.Place, t.PlaceURL, t.IsActive, t.SortOrder, t.Capacity, t.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("update training: %w", err)
@@ -97,7 +99,7 @@ func (s *Store) ListTrainings(ctx context.Context, includeInactive bool) ([]doma
 	if !includeInactive {
 		q += ` WHERE is_active = true`
 	}
-	q += ` ORDER BY weekday, start_time, sort_order, id`
+	q += ` ORDER BY training_date, start_time, sort_order, id`
 
 	rows, err := s.db.QueryContext(ctx, q)
 	if err != nil {

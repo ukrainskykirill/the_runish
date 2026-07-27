@@ -39,6 +39,7 @@ const SettingSubscriptionReminderDays = "subscription_reminder_days"
 const (
 	SettingSubscriptionReminderHours = "subscription_reminder_hours"
 	SettingTrainingReminderHours     = "training_reminder_hours"
+	SettingTrainingWindowDays        = "training_window_days"
 	SettingQuietFrom                 = "notify_quiet_from"
 	SettingQuietTo                   = "notify_quiet_to"
 )
@@ -121,6 +122,18 @@ func (s *Store) TrainingReminderHours(ctx context.Context) (int, error) {
 		return 24, nil
 	}
 	return n, nil
+}
+
+func (s *Store) TrainingWindowDays(ctx context.Context) int {
+	v, err := s.GetSetting(ctx, SettingTrainingWindowDays)
+	if err != nil {
+		return 28
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(v))
+	if err != nil || n < 1 || n > 365 {
+		return 28
+	}
+	return n
 }
 
 func (s *Store) QuietWindow(ctx context.Context) (from, to int) {

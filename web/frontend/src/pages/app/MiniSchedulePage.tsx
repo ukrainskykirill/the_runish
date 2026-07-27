@@ -11,7 +11,7 @@ const DOW = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 const ERR_MESSAGES: Record<string, string> = {
   entry_fee_required: 'Сначала оплатите вступительный взнос',
-  access_required: 'Нужна активная подписка или разовая тренировка',
+  access_required: 'Нужна активная подписка',
   session_full: 'Свободных мест больше нет',
   already_registered: 'Вы уже записаны на это занятие',
   session_cancelled: 'Занятие отменено',
@@ -122,7 +122,10 @@ export function MiniSchedulePage() {
               </div>
               <div className="vline" />
               <div className="ti">
-                <div className="tt">{o.title}</div>
+                <div className="tt">
+                  {o.title}
+                  {o.kind === 'sunday_runish' ? <span className="chip chip-track">Sunday Runish</span> : null}
+                </div>
                 <div className="meta">
                   <span>
                     <ClockIcon className="i i-xs" />

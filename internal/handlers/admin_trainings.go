@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"therunish/internal/domain"
 	"therunish/internal/storage"
@@ -162,7 +163,8 @@ func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 	description := strings.TrimSpace(r.FormValue("description"))
 	place := r.FormValue("place")
 	startTime := r.FormValue("start_time")
-	weekday, _ := strconv.Atoi(r.FormValue("weekday"))
+	trainingDate := strings.TrimSpace(r.FormValue("training_date"))
+	kind := r.FormValue("kind")
 	sortOrder, _ := strconv.Atoi(r.FormValue("sort_order"))
 	isActive := r.FormValue("is_active") == "on"
 
@@ -172,8 +174,19 @@ func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 	if place == "" {
 		return nil, "Место обязательно"
 	}
-	if weekday < 1 || weekday > 7 {
-		return nil, "Выберите день недели"
+	if kind == "" {
+		kind = "regular"
+	}
+	if kind != "regular" && kind != "sunday_runish" {
+		return nil, "Некорректный тип тренировки"
+	}
+	d, err := time.Parse("2006-01-02", trainingDate)
+	if err != nil {
+		return nil, "Укажите дату тренировки"
+	}
+	now := time.Now()
+	if d.Before(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)) {
+		return nil, "Дата не может быть в прошлом"
 	}
 	if !timeHHMM.MatchString(startTime) {
 		return nil, "Укажите время в формате ЧЧ:ММ"
@@ -194,14 +207,15 @@ func parseTrainingForm(r *http.Request) (*domain.Training, string) {
 	}
 
 	return &domain.Training{
-		Title:       title,
-		Description: description,
-		Weekday:     weekday,
-		StartTime:   startTime,
-		Place:       place,
-		PlaceURL:    placeURL,
-		IsActive:    isActive,
-		SortOrder:   sortOrder,
-		Capacity:    capacity,
+		Title:        title,
+		Description:  description,
+		Kind:         kind,
+		TrainingDate: trainingDate,
+		StartTime:    startTime,
+		Place:        place,
+		PlaceURL:     placeURL,
+		IsActive:     isActive,
+		SortOrder:    sortOrder,
+		Capacity:     capacity,
 	}, ""
 }

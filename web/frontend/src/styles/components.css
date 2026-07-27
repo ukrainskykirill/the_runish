@@ -441,6 +441,29 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
 .cal-mev .ev-place-link { text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .cal-mev .ev-place-link:hover { color: #fff; }
 
+.cal-ev-badge {
+  display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.9); color: var(--runish-red-deep);
+  font-size: 9px; font-weight: 800; letter-spacing: 0.06em; vertical-align: middle;
+}
+.cal-ev-foot { margin-top: 9px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cal-mev .cal-ev-foot { margin-top: 6px; gap: 6px; }
+.cal-reg-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--cream-light); color: var(--runish-red-deep);
+  font-weight: 700; font-size: 12px; line-height: 1.1; text-transform: none; letter-spacing: 0;
+  padding: 7px 12px; border-radius: var(--radius-pill); border: none; cursor: pointer;
+  transition: background var(--dur) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.cal-reg-btn:hover:not(:disabled) { background: #fff; }
+.cal-reg-btn:active:not(:disabled) { transform: translateY(1px); }
+.cal-reg-btn:disabled { opacity: 0.6; cursor: default; }
+.cal-reg-btn.ghost { background: transparent; color: var(--cream-light); border: 1px solid rgba(244,236,221,0.6); }
+.cal-reg-btn.ghost:hover:not(:disabled) { background: rgba(244,236,221,0.14); }
+.cal-mev .cal-reg-btn { padding: 5px 10px; font-size: 11px; }
+.cal-reg-tag { font-size: 11px; font-weight: 700; color: var(--cream-light); }
+.cal-reg-note { font-size: 11px; font-weight: 600; color: rgba(244,236,221,0.75); }
+
 @media (max-width: 980px) {
   .cal { grid-template-columns: 1fr; }
   .cal-loading { grid-template-columns: 1fr; }

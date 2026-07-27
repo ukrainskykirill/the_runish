@@ -120,21 +120,41 @@ export function HomePage() {
       <section className="sec alt" id="about">
         <div className="wrap">
           <div className="sec-head">
-            <div className="eb">Почему мы</div>
-            <h2 className="d2">Три причины начать</h2>
+            <div className="eb">О клубе</div>
+            <h2 className="d2">Тренировки с нами это:</h2>
           </div>
           <div className="feat-grid">
-            <FeatureCard icon={<BoltIcon />} title="Тренировки">
-              Интервалы, длительный кросс и беговая ОФП по расписанию. Тренер ведёт — ты бежишь в
-              своём темпе и растёшь.
+            <FeatureCard
+              icon={<BoltIcon />}
+              title="Любой уровень подготовки"
+              action={
+                <Link to="/auth/telegram" className="fcard-link">
+                  Регистрация
+                </Link>
+              }
+            >
+              Определяем твой уровень после заполнения анкеты при регистрации.
             </FeatureCard>
-            <FeatureCard icon={<CommunityIcon />} title="Сообщество">
+            <FeatureCard
+              icon={<CommunityIcon />}
+              title="Комьюнити"
+              action={
+                <a
+                  className="btn btn-ghost btn-sm"
+                  href={TELEGRAM_LINKS.chat}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Вступить в чат
+                </a>
+              }
+            >
               Чат клуба в Telegram, совместные старты и мероприятия. Здесь находят компанию для
               бега — и не только.
             </FeatureCard>
-            <FeatureCard icon={<BoxIcon />} title="Подписка">
-              Гибкие форматы: разовое занятие, безлимит на месяц или индивидуальное сопровождение.
-              Оплата онлайн.
+            <FeatureCard icon={<BoxIcon />} title="Удобный формат">
+              Все тренировки в одной подписке, интенсивы по бегу, подготовка к забегу, бесплатные
+              воскресные пробежки.
             </FeatureCard>
           </div>
         </div>

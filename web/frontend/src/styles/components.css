@@ -124,6 +124,12 @@ section { scroll-margin-top: 84px; }
 .fcard .fi { width: 56px; height: 56px; border-radius: var(--radius-md); background: var(--runish-red); color: var(--cream-light); display: grid; place-items: center; margin-bottom: 24px; }
 .fcard h3 { font-family: var(--font-display); text-transform: uppercase; font-weight: 400; font-size: 30px; letter-spacing: -0.005em; }
 .fcard p { color: var(--text-body); margin: 12px 0 0; font-size: 16px; }
+.fcard-action { margin-top: 18px; }
+.fcard-link {
+  color: var(--runish-red-ink); font-weight: 700;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.fcard-link:hover { color: var(--runish-red); }
 
 /* news */
 .news-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }

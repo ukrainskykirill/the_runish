@@ -90,6 +90,7 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("POST /admin/settings/templates", adminMw(http.HandlerFunc(a.AdminTemplatesSubmit)).ServeHTTP)
 	mux.HandleFunc("POST /admin/notifications/send", adminMw(http.HandlerFunc(a.AdminSendNotificationSubmit)).ServeHTTP)
 	mux.HandleFunc("GET /admin/trainings", adminMw(http.HandlerFunc(a.AdminListTrainingsPage)).ServeHTTP)
+	mux.HandleFunc("GET /admin/trainings/{id}/registrations", adminMw(http.HandlerFunc(a.AdminTrainingRegistrationsPage)).ServeHTTP)
 	mux.HandleFunc("GET /admin/trainings/new", adminMw(http.HandlerFunc(a.AdminCreateTrainingPage)).ServeHTTP)
 	mux.HandleFunc("POST /admin/trainings", adminMw(http.HandlerFunc(a.AdminCreateTrainingSubmit)).ServeHTTP)
 	mux.HandleFunc("GET /admin/trainings/{id}/edit", adminMw(http.HandlerFunc(a.AdminEditTrainingPage)).ServeHTTP)

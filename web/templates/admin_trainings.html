@@ -13,6 +13,7 @@
             <th>Тип</th>
             <th>Название</th>
             <th>Место</th>
+            <th>Записи</th>
             <th>Порядок</th>
             <th>Активна</th>
             <th>Действия</th>
@@ -27,6 +28,7 @@
             <td>{{if eq .Kind "sunday_runish"}}Sunday Runish{{else}}Регулярная{{end}}</td>
             <td>{{.Title}}</td>
             <td>{{.Place}}</td>
+            <td><a href="/admin/trainings/{{.ID}}/registrations" class="btn btn-secondary btn-sm">👥 {{index $.RegCounts .ID}}</a></td>
             <td>{{.SortOrder}}</td>
             <td>{{if .IsActive}}✅{{else}}❌{{end}}</td>
             <td style="white-space:nowrap">
@@ -37,7 +39,7 @@
             </td>
         </tr>
         {{else}}
-        <tr><td colspan="9" style="text-align:center;color:#9ca3af;padding:2rem">Тренировок пока нет</td></tr>
+        <tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:2rem">Тренировок пока нет</td></tr>
         {{end}}
     </tbody>
 </table>

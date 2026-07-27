@@ -1,0 +1,39 @@
+{{define "content"}}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h2 style="font-size:1.4rem">Записи · {{.Training.Title}}</h2>
+    <a href="/admin/trainings" class="btn btn-secondary">← К тренировкам</a>
+</div>
+
+<p style="color:#6b7280;margin-bottom:1.4rem">
+    {{if eq .Training.Kind "sunday_runish"}}Sunday Runish{{else}}Регулярная{{end}} ·
+    {{.Training.TrainingDate}} ({{weekday .Training.Weekday}}) в {{.Training.StartTime}} · {{.Training.Place}}
+    · Записалось: <strong>{{.ActiveCount}}</strong>{{if .Training.Capacity}} / {{.Training.Capacity}}{{end}}
+</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Имя</th>
+            <th>Телефон</th>
+            <th>Telegram</th>
+            <th>Статус</th>
+            <th>Записан</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Registrations}}
+        <tr{{if ne .Status "active"}} style="opacity:0.45"{{end}}>
+            <td style="white-space:nowrap">{{.SessionDate}}</td>
+            <td>{{if .FullName}}{{.FullName}}{{else}}—{{end}}</td>
+            <td style="white-space:nowrap">{{if .Phone}}{{.Phone}}{{else}}—{{end}}</td>
+            <td>{{if .Username}}<a href="https://t.me/{{.Username}}" target="_blank">@{{.Username}}</a>{{else if .TelegramID}}<span style="color:#6b7280">id {{.TelegramID}}</span>{{else}}—{{end}}</td>
+            <td>{{if eq .Status "active"}}✅ Активна{{else}}❌ Отменена{{end}}</td>
+            <td style="white-space:nowrap">{{.CreatedAt.Format "02.01.2006 15:04"}}</td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:2rem">Пока никто не записался</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

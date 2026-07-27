@@ -22,15 +22,72 @@ func (a *App) AdminListTrainingsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	counts, err := a.store.CountActiveRegistrationsByTraining(r.Context())
+	if err != nil {
+		a.logger.Error("admin count registrations", "err", err)
+		counts = map[int64]int{}
+	}
+
 	data := struct {
 		PageData
 		Trainings []domain.Training
+		RegCounts map[int64]int
 	}{
 		PageData:  PageData{BotUsername: a.cfg.BotUsername},
 		Trainings: trainings,
+		RegCounts: counts,
 	}
 	if err := a.renderer.Render(w, "admin_trainings", data); err != nil {
 		a.logger.Error("render admin_trainings", "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
+func (a *App) AdminTrainingRegistrationsPage(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	t, err := a.store.GetTraining(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			http.NotFound(w, r)
+			return
+		}
+		a.logger.Error("get training", "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	regs, err := a.store.ListTrainingRegistrationsAdmin(r.Context(), id)
+	if err != nil {
+		a.logger.Error("admin list training registrations", "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	activeCount := 0
+	for _, reg := range regs {
+		if reg.Status == "active" {
+			activeCount++
+		}
+	}
+
+	data := struct {
+		PageData
+		Training      domain.Training
+		Registrations []storage.AdminTrainingReg
+		ActiveCount   int
+	}{
+		PageData:      PageData{BotUsername: a.cfg.BotUsername},
+		Training:      t,
+		Registrations: regs,
+		ActiveCount:   activeCount,
+	}
+	if err := a.renderer.Render(w, "admin_training_registrations", data); err != nil {
+		a.logger.Error("render admin_training_registrations", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }

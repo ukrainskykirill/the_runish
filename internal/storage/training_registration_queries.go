@@ -215,6 +215,70 @@ func occKey(trainingID int64, date string) string {
 	return strconv.FormatInt(trainingID, 10) + "|" + date
 }
 
+// AdminTrainingReg — одна запись на тренировку для админ-панели.
+type AdminTrainingReg struct {
+	SessionDate string
+	FullName    string
+	Phone       string
+	Username    string
+	TelegramID  int64
+	Status      string
+	CreatedAt   time.Time
+}
+
+// CountActiveRegistrationsByTraining — активные записи по каждой тренировке (training_id → count).
+func (s *Store) CountActiveRegistrationsByTraining(ctx context.Context) (map[int64]int, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT ts.training_id, count(r.id) FILTER (WHERE r.status = 'active')
+		FROM training_sessions ts
+		LEFT JOIN training_registrations r ON r.session_id = ts.id
+		GROUP BY ts.training_id`)
+	if err != nil {
+		return nil, fmt.Errorf("count registrations by training: %w", err)
+	}
+	defer rows.Close()
+
+	counts := make(map[int64]int)
+	for rows.Next() {
+		var tid int64
+		var cnt int
+		if err := rows.Scan(&tid, &cnt); err != nil {
+			return nil, fmt.Errorf("scan count: %w", err)
+		}
+		counts[tid] = cnt
+	}
+	return counts, rows.Err()
+}
+
+// ListTrainingRegistrationsAdmin — все записи (активные и отменённые) на тренировку.
+func (s *Store) ListTrainingRegistrationsAdmin(ctx context.Context, trainingID int64) ([]AdminTrainingReg, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT to_char(ts.session_date,'YYYY-MM-DD'), u.full_name, u.phone, u.username, u.telegram_id, r.status, r.created_at
+		FROM training_registrations r
+		JOIN training_sessions ts ON ts.id = r.session_id
+		JOIN users u ON u.id = r.user_id
+		WHERE ts.training_id = $1
+		ORDER BY ts.session_date DESC, (r.status = 'active') DESC, r.created_at`, trainingID)
+	if err != nil {
+		return nil, fmt.Errorf("list training registrations admin: %w", err)
+	}
+	defer rows.Close()
+
+	var regs []AdminTrainingReg
+	for rows.Next() {
+		var reg AdminTrainingReg
+		var fullName, phone, username sql.NullString
+		if err := rows.Scan(&reg.SessionDate, &fullName, &phone, &username, &reg.TelegramID, &reg.Status, &reg.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan admin registration: %w", err)
+		}
+		reg.FullName = fullName.String
+		reg.Phone = phone.String
+		reg.Username = username.String
+		regs = append(regs, reg)
+	}
+	return regs, rows.Err()
+}
+
 func (s *Store) ListMyTrainingRegistrations(ctx context.Context, userID int64) ([]domain.TrainingRegistration, error) {
 	loc := clubLocation()
 	now := time.Now().In(loc)

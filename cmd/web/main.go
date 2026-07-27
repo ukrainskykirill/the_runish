@@ -72,6 +72,7 @@ func main() {
 			"admin_merch_form.html",
 			"admin_trainings.html",
 			"admin_training_form.html",
+			"admin_training_registrations.html",
 			"admin_settings.html",
 			"admin_users.html",
 			"admin_user_detail.html",

@@ -124,15 +124,7 @@ export function HomePage() {
             <h2 className="d2">Тренировки с нами это:</h2>
           </div>
           <div className="feat-grid">
-            <FeatureCard
-              icon={<BoltIcon />}
-              title="Любой уровень подготовки"
-              action={
-                <Link to="/auth/telegram" className="fcard-link">
-                  Регистрация
-                </Link>
-              }
-            >
+            <FeatureCard icon={<BoltIcon />} title="Любой уровень подготовки">
               Определяем твой уровень после заполнения анкеты при регистрации.
             </FeatureCard>
             <FeatureCard

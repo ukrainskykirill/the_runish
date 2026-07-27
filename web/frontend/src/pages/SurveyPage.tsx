@@ -196,7 +196,7 @@ function SurveyFlow({ data }: { data: SurveyResponse }) {
           </dl>
           <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
             <button
-              className="btn btn-outline-red"
+              className="btn btn-primary"
               onClick={() => {
                 setStepIndex(0);
                 setPhase('questions');

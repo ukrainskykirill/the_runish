@@ -123,7 +123,7 @@ export function HomePage() {
         <div className="wrap">
           <div className="sec-head">
             <div className="eb">О клубе</div>
-            <h2 className="d2">Тренировки с нами это:</h2>
+            <h2 className="d2">Тренировки с нами</h2>
           </div>
           <div className="feat-grid">
             <FeatureCard icon={<BoltIcon />} title="Любой уровень подготовки">

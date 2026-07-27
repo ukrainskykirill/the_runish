@@ -472,7 +472,10 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
   .cal-colhead { width: 64px; flex: none; }
   .cal-day .events { margin-top: 0; flex: 1; }
   .cal-day:not(.has) { display: none; }
-  .cal-board-head { flex-wrap: wrap; }
+  .cal-board-head { flex-wrap: wrap; padding: 14px 16px; gap: 10px; }
+  .cal-board-head .wk { flex: 1 1 100%; flex-wrap: wrap; row-gap: 4px; }
+  .cal-board-head .wk .t { font-size: 19px; }
+  .cal-board-head .wk .r { flex-basis: 100%; white-space: nowrap; }
   .cal-legend { display: none; }
   .cal-mhead { padding: 8px 4px; font-size: 12px; text-align: center; }
   .cal-mday { min-height: 68px; padding: 6px 4px 8px; gap: 4px; }

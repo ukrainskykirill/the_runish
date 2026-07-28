@@ -83,7 +83,7 @@ function CalEventFoot({ occ, busy, onRegister, onCancel }: Omit<EventProps, 'var
     case 'past':
       return <div className="cal-ev-foot"><span className="cal-reg-note">Завершена</span></div>;
     case 'attended':
-      return <div className="cal-ev-foot"><span className="cal-reg-tag">✓ Вы были записаны</span></div>;
+      return <div className="cal-ev-foot"><span className="cal-reg-tag">✓ Записан</span></div>;
     case 'registered':
       return (
         <div className="cal-ev-foot" onClick={stop}>

@@ -8,7 +8,7 @@ export function SchedulePage() {
         <div className="hero-sl speedlines" />
         <div className="wrap">
           <div className="eb">Расписание</div>
-          <h1 className="d2">Тренировки недели</h1>
+          <h1 className="d2">Клубные тренировки</h1>
         </div>
       </section>
       <section className="sec">

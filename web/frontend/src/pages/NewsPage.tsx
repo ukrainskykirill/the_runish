@@ -15,7 +15,7 @@ export function NewsPage() {
       <section className="page-hero">
         <div className="hero-sl speedlines" />
         <div className="wrap">
-          <div className="eb">Новости</div>
+          <div className="eb">Анонсы</div>
           <h1 className="d2">Что в клубе</h1>
         </div>
       </section>
@@ -24,9 +24,9 @@ export function NewsPage() {
           {loading ? (
             <LoadingGrid count={3} />
           ) : error ? (
-            <ErrorState message="Не удалось загрузить новости" />
+            <ErrorState message="Не удалось загрузить анонсы" />
           ) : news.length === 0 ? (
-            <div className="empty-state">Новостей пока нет</div>
+            <div className="empty-state">Анонсов пока нет</div>
           ) : (
             <div className="news-grid">
               {news.map((item, i) => (

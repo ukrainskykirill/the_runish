@@ -154,6 +154,15 @@ export function HomePage() {
         </div>
       </section>
 
+      {!hasActiveSub ? (
+        <SubscribeBanner
+          price={subPrice}
+          onBuy={() => {
+            if (subscription) add(subscription.id);
+          }}
+        />
+      ) : null}
+
       <ScheduleCalendar />
 
       <section className="sec alt" id="runners">
@@ -171,14 +180,6 @@ export function HomePage() {
               Все тренировки
             </Link>
           </div>
-          {!hasActiveSub ? (
-            <SubscribeBanner
-              price={subPrice}
-              onBuy={() => {
-                if (subscription) add(subscription.id);
-              }}
-            />
-          ) : null}
           <EntryFeeNotice />
           <div className="cat-grid">
             {services.map((service) => (
@@ -192,11 +193,11 @@ export function HomePage() {
         <div className="wrap">
           <div className="sec-head between">
             <div>
-              <div className="eb">Новости</div>
+              <div className="eb">Анонсы</div>
               <h2 className="d2">Что в клубе</h2>
             </div>
             <Link className="btn btn-ghost btn-sm" to="/news">
-              Все новости
+              Все анонсы
             </Link>
           </div>
           <div className="news-grid">

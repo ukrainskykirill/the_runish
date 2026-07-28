@@ -1,6 +1,6 @@
 {{define "content"}}
 <h2 style="font-size:1.4rem;margin-bottom:1.5rem">
-    {{if .News}}Редактировать новость{{else}}Новая новость{{end}}
+    {{if .News}}Редактировать анонс{{else}}Новый анонс{{end}}
 </h2>
 
 {{if .Error}}
@@ -10,12 +10,12 @@
 <form method="POST" action="{{if .News}}/admin/news/{{.News.ID}}{{else}}/admin/news{{end}}" style="max-width:600px">
     <div class="form-group">
         <label>Заголовок *</label>
-        <input type="text" name="title" required value="{{if .News}}{{.News.Title}}{{end}}" placeholder="Заголовок новости">
+        <input type="text" name="title" required value="{{if .News}}{{.News.Title}}{{end}}" placeholder="Заголовок анонса">
     </div>
 
     <div class="form-group">
-        <label>Текст новости *</label>
-        <textarea name="content" required placeholder="Текст новости...">{{if .News}}{{.News.Content}}{{end}}</textarea>
+        <label>Текст анонса *</label>
+        <textarea name="content" required placeholder="Текст анонса...">{{if .News}}{{.News.Content}}{{end}}</textarea>
     </div>
 
     <div class="form-group">

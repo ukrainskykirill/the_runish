@@ -15,7 +15,7 @@ export function Footer() {
             <div className="foot-col">
               <h4>Клуб</h4>
               <Link to="/runners">Тренировки</Link>
-              <Link to="/news">Новости</Link>
+              <Link to="/news">Анонсы</Link>
               <Link to="/merch">Мерч</Link>
             </div>
             <div className="foot-col">

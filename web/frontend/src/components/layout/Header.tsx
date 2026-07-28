@@ -43,7 +43,7 @@ export function Header() {
             Главная
           </NavLink>
           <NavLink to="/news" className={navLinkClass}>
-            Новости
+            Анонсы
           </NavLink>
           <NavLink to="/schedule" className={navLinkClass}>
             Расписание
@@ -106,7 +106,7 @@ export function Header() {
             Главная
           </NavLink>
           <NavLink to="/news" className={navLinkClass} onClick={() => setMobileMenuOpen(false)}>
-            Новости
+            Анонсы
           </NavLink>
           <NavLink to="/schedule" className={navLinkClass} onClick={() => setMobileMenuOpen(false)}>
             Расписание

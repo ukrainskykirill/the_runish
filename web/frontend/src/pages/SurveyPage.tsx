@@ -195,8 +195,11 @@ function SurveyFlow({ data }: { data: SurveyResponse }) {
             ))}
           </dl>
           <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
+            <Link className="btn btn-primary" to="/runners">
+              Купить тренировку
+            </Link>
             <button
-              className="btn btn-primary"
+              className="btn btn-ghost"
               onClick={() => {
                 setStepIndex(0);
                 setPhase('questions');
@@ -204,9 +207,6 @@ function SurveyFlow({ data }: { data: SurveyResponse }) {
             >
               Изменить ответы
             </button>
-            <Link className="btn btn-ghost" to="/me">
-              В личный кабинет
-            </Link>
           </div>
           {branch && <input type="hidden" value={branch} readOnly />}
         </div>

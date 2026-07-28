@@ -1,7 +1,7 @@
 {{define "content"}}
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
-    <h2 style="font-size:1.4rem">Новости ({{len .News}})</h2>
-    <a href="/admin/news/new" class="btn">+ Добавить новость</a>
+    <h2 style="font-size:1.4rem">Анонсы ({{len .News}})</h2>
+    <a href="/admin/news/new" class="btn">+ Добавить анонс</a>
 </div>
 
 <table>
@@ -25,13 +25,13 @@
             <td>{{if .IsActive}}✅{{else}}❌{{end}}</td>
             <td>
                 <a href="/admin/news/{{.ID}}/edit" class="btn btn-secondary btn-sm">✏️ Изменить</a>
-                <form method="POST" action="/admin/news/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить новость «{{.Title}}»?')">
+                <form method="POST" action="/admin/news/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить анонс «{{.Title}}»?')">
                     <button type="submit" class="btn btn-danger btn-sm">🗑 Удалить</button>
                 </form>
             </td>
         </tr>
         {{else}}
-        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:2rem">Новостей пока нет</td></tr>
+        <tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:2rem">Анонсов пока нет</td></tr>
         {{end}}
     </tbody>
 </table>

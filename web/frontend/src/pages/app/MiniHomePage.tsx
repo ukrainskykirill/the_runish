@@ -91,7 +91,7 @@ export function MiniHomePage() {
           </span>
           <div>
             <div className="tt">Канал клуба</div>
-            <div className="td">Новости</div>
+            <div className="td">Анонсы</div>
           </div>
         </a>
         <Link className="tile ink" to="/app/profile">

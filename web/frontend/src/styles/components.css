@@ -168,8 +168,8 @@ section { scroll-margin-top: 84px; }
 
 /* entry-fee notice — объяснение порядка покупки (взнос → подписка) */
 .entry-notice {
-  background: var(--ink);
-  border: 1px solid rgba(244, 236, 221, 0.14);
+  background: var(--surface-card);
+  border: 1px solid var(--cream-deep);
   border-left: 4px solid var(--runish-red);
   border-radius: var(--radius-md);
   padding: 22px 24px;
@@ -178,13 +178,13 @@ section { scroll-margin-top: 84px; }
 }
 .en-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
 .en-badge {
-  display: inline-block; background: var(--runish-red); color: var(--text-on-red);
+  display: inline-block; background: var(--ink); color: var(--cream-light);
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
   padding: 4px 10px; border-radius: var(--radius-pill);
 }
-.en-head h3 { margin: 0; font-size: 20px; color: var(--cream-light); }
-.en-lead { margin: 0 0 18px; color: rgba(244, 236, 221, 0.78); font-size: 15px; line-height: 1.5; }
-.en-lead b { color: var(--cream-light); }
+.en-head h3 { margin: 0; font-size: 20px; color: var(--text-strong); }
+.en-lead { margin: 0 0 18px; color: var(--text-body); font-size: 15px; line-height: 1.5; }
+.en-lead b { color: var(--text-strong); }
 .en-steps {
   list-style: none; margin: 0; padding: 0;
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
@@ -197,44 +197,76 @@ section { scroll-margin-top: 84px; }
   font-weight: 800; font-size: 14px;
 }
 .en-steps li > div { display: flex; flex-direction: column; gap: 4px; }
-.en-steps li > div b { color: var(--cream-light); font-size: 14px; }
-.en-steps li > div span { color: rgba(244, 236, 221, 0.6); font-size: 13px; line-height: 1.35; }
+.en-steps li > div b { color: var(--text-strong); font-size: 14px; }
+.en-steps li > div span { color: var(--text-faint); font-size: 13px; line-height: 1.35; }
 .en-reg-link {
-  align-self: flex-start; color: var(--cream-light); font-size: 13px; font-weight: 700;
+  align-self: flex-start; color: var(--runish-red-ink); font-size: 13px; font-weight: 700;
   text-decoration: underline; text-underline-offset: 3px;
 }
-.en-reg-link:hover { color: #fff; }
+.en-reg-link:hover { color: var(--runish-red); }
 @media (max-width: 720px) {
   .entry-notice { padding: 18px 18px; }
   .en-steps { grid-template-columns: 1fr; gap: 12px; }
 }
 
+/* Баннер подписки — крупный CTA с ценой */
+.sb-band { padding: 0; }
 .subscribe-banner {
-  background: var(--runish-red);
-  border-radius: var(--radius-md);
-  margin-bottom: 28px;
-  box-shadow: var(--shadow-red);
-  padding: 8px;
-}
-.sb-cta {
-  width: 100%;
-  background: transparent;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 30px 34px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--runish-red), var(--runish-red-deep));
   color: var(--cream-light);
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  font-size: 34px;
-  line-height: 1.1;
-  padding: 22px 24px;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background var(--dur) var(--ease-out);
+  box-shadow: var(--shadow-red);
 }
-.sb-cta:hover { background: rgba(0, 0, 0, 0.12); }
+.sb-lines {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  color: rgba(255, 255, 255, 0.14); --sl-w: 2px; --sl-gap: 14px;
+  -webkit-mask: linear-gradient(90deg, transparent 35%, #000 100%);
+  mask: linear-gradient(90deg, transparent 35%, #000 100%);
+}
+.sb-copy { position: relative; z-index: 1; min-width: 0; }
+.sb-kicker {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.14em; color: rgba(244, 236, 221, 0.8);
+}
+.sb-title {
+  margin-top: 8px;
+  font-family: var(--font-display); text-transform: uppercase; font-weight: 400;
+  font-size: clamp(26px, 3.4vw, 40px); line-height: 0.98; letter-spacing: -0.005em;
+}
+.sb-note { margin-top: 8px; font-size: 14px; color: rgba(244, 236, 221, 0.78); }
+.sb-buy {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.sb-price {
+  font-family: var(--font-display); font-size: clamp(30px, 3.6vw, 44px);
+  line-height: 1; white-space: nowrap;
+}
+.sb-price span { font-family: var(--font-text); font-size: 15px; font-weight: 600; opacity: 0.8; }
+.sb-cta {
+  background: var(--cream-light);
+  color: var(--runish-red-deep);
+  font-family: var(--font-text); font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em; font-size: 15px;
+  padding: 16px 34px;
+  border: none; border-radius: var(--radius-pill);
+  cursor: pointer; white-space: nowrap;
+  transition: background var(--dur) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.sb-cta:hover { background: #fff; }
 .sb-cta:active { transform: translateY(1px) scale(0.99); }
 @media (max-width: 720px) {
-  .sb-cta { font-size: 26px; padding: 18px 16px; }
+  .subscribe-banner { padding: 24px 20px; gap: 18px; }
+  .sb-buy { width: 100%; justify-content: space-between; }
+  .sb-cta { flex: 1; padding: 15px 20px; }
 }
 
 /* merch */

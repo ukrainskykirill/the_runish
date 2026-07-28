@@ -461,6 +461,16 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
 .cal-reg-btn.ghost { background: transparent; color: var(--cream-light); border: 1px solid rgba(244,236,221,0.6); }
 .cal-reg-btn.ghost:hover:not(:disabled) { background: rgba(244,236,221,0.14); }
 .cal-mev .cal-reg-btn { padding: 5px 10px; font-size: 11px; }
+.cal-ev.is-past, .cal-mev.is-past {
+  background: var(--cream-deep); color: var(--text-faint);
+}
+.cal-ev.is-past:hover, .cal-mev.is-past:hover { transform: none; box-shadow: none; }
+.cal-ev.is-past .cal-ev-badge, .cal-mev.is-past .cal-ev-badge {
+  background: var(--text-faint); color: var(--cream-light);
+}
+.cal-ev.is-past .cal-reg-note, .cal-mev.is-past .cal-reg-note,
+.cal-ev.is-past .cal-reg-tag, .cal-mev.is-past .cal-reg-tag { color: var(--text-faint); }
+.cal-ev.is-past .cal-ev-desc, .cal-mev.is-past .cal-ev-desc { border-top-color: var(--border-soft); color: var(--text-body); }
 .cal-reg-tag { font-size: 11px; font-weight: 700; color: var(--cream-light); }
 .cal-reg-note { font-size: 11px; font-weight: 600; color: rgba(244,236,221,0.75); }
 

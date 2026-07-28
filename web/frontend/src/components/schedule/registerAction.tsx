@@ -19,13 +19,23 @@ export function occKey(o: TrainingOccurrence): string {
   return `${o.training_id}|${o.session_date}`;
 }
 
-export type RegMode = 'registered' | 'cancelled' | 'login' | 'full' | 'register' | 'free' | 'needsub';
+export type RegMode =
+  | 'past'
+  | 'attended'
+  | 'registered'
+  | 'cancelled'
+  | 'login'
+  | 'full'
+  | 'register'
+  | 'free'
+  | 'needsub';
 
 export function resolveRegMode(
   occ: TrainingOccurrence,
   user: ReturnType<typeof useAuth>['user'],
   canBookFreeLesson: boolean,
 ): RegMode {
+  if (occ.past) return occ.registered ? 'attended' : 'past';
   if (occ.registered) return 'registered';
   if (occ.cancelled) return 'cancelled';
   if (!user) return 'login';
@@ -89,6 +99,14 @@ export function RegisterAction({ occ, busy, onRegister, onCancel }: RegisterActi
   const mode = resolveRegMode(occ, user, canBookFreeLesson);
 
   switch (mode) {
+    case 'past':
+      return (
+        <button className="btn btn-ghost btn-sm" disabled>
+          Завершена
+        </button>
+      );
+    case 'attended':
+      return <span className="chip chip-track">Вы были записаны</span>;
     case 'registered':
       return (
         <div className="tcard-reg">

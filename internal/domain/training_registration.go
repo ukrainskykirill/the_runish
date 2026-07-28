@@ -12,6 +12,7 @@ type TrainingOccurrence struct {
 	Place            string  `json:"place"`
 	PlaceURL         *string `json:"place_url,omitempty"`
 	SessionDate      string  `json:"session_date"`
+	Past             bool    `json:"past"`
 	Capacity         *int    `json:"capacity,omitempty"`
 	RegisteredCount  int     `json:"registered_count"`
 	Available        bool    `json:"available"`

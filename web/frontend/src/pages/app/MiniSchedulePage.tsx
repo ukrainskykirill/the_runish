@@ -39,7 +39,7 @@ export function MiniSchedulePage() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const { data, loading, error } = useAsync(() => api.trainingsUpcoming(), [reloadKey]);
-  const occurrences = data?.occurrences ?? [];
+  const occurrences = (data?.occurrences ?? []).filter((o) => !o.past);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

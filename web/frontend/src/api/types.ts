@@ -80,6 +80,7 @@ export interface TrainingOccurrence {
   place: string;
   place_url?: string;
   session_date: string; // "YYYY-MM-DD"
+  past: boolean;
   capacity?: number;
   registered_count: number;
   available: boolean;

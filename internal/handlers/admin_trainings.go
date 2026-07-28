@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -14,8 +15,55 @@ import (
 
 var timeHHMM = regexp.MustCompile(`^([01]\d|2[0-3]):[0-5]\d$`)
 
+// trainingGroup — тренировки одного месяца для списка в админке.
+type trainingGroup struct {
+	Label     string
+	Trainings []domain.Training
+}
+
+var monthsNom = []string{
+	"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+	"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+}
+
+// trainingPeriodRange — диапазон [from, to) по пресету периода.
+func trainingPeriodRange(period string, now time.Time) (string, string) {
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	const layout = "2006-01-02"
+	switch period {
+	case "week":
+		monday := today.AddDate(0, 0, -(int(today.Weekday())+6)%7)
+		return monday.Format(layout), monday.AddDate(0, 0, 7).Format(layout)
+	case "month":
+		first := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
+		return first.Format(layout), first.AddDate(0, 1, 0).Format(layout)
+	case "upcoming":
+		return today.Format(layout), ""
+	case "past":
+		return "", today.Format(layout)
+	default:
+		return "", ""
+	}
+}
+
 func (a *App) AdminListTrainingsPage(w http.ResponseWriter, r *http.Request) {
-	trainings, err := a.store.ListTrainings(r.Context(), true)
+	period := r.URL.Query().Get("period")
+	if period == "" {
+		period = "all"
+	}
+	from, to := trainingPeriodRange(period, time.Now())
+	if period == "custom" {
+		from = strings.TrimSpace(r.URL.Query().Get("from"))
+		to = strings.TrimSpace(r.URL.Query().Get("to"))
+		if to != "" {
+			// «по» включительно: сдвигаем верхнюю границу на день вперёд.
+			if d, err := time.Parse("2006-01-02", to); err == nil {
+				to = d.AddDate(0, 0, 1).Format("2006-01-02")
+			}
+		}
+	}
+
+	all, err := a.store.ListTrainings(r.Context(), true)
 	if err != nil {
 		a.logger.Error("admin list trainings", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -28,14 +76,53 @@ func (a *App) AdminListTrainingsPage(w http.ResponseWriter, r *http.Request) {
 		counts = map[int64]int{}
 	}
 
+	var filtered []domain.Training
+	totalRegs := 0
+	for _, t := range all {
+		if from != "" && t.TrainingDate < from {
+			continue
+		}
+		if to != "" && t.TrainingDate >= to {
+			continue
+		}
+		filtered = append(filtered, t)
+		totalRegs += counts[t.ID]
+	}
+
+	// Группировка по месяцу (тренировки уже отсортированы по дате).
+	var groups []trainingGroup
+	for _, t := range filtered {
+		label := t.TrainingDate
+		if d, err := time.Parse("2006-01-02", t.TrainingDate); err == nil {
+			label = fmt.Sprintf("%s %d", monthsNom[int(d.Month())-1], d.Year())
+		}
+		if len(groups) > 0 && groups[len(groups)-1].Label == label {
+			groups[len(groups)-1].Trainings = append(groups[len(groups)-1].Trainings, t)
+			continue
+		}
+		groups = append(groups, trainingGroup{Label: label, Trainings: []domain.Training{t}})
+	}
+
 	data := struct {
 		PageData
-		Trainings []domain.Training
+		Groups    []trainingGroup
 		RegCounts map[int64]int
+		Period    string
+		From      string
+		To        string
+		Total     int
+		TotalRegs int
+		Today     string
 	}{
 		PageData:  PageData{BotUsername: a.cfg.BotUsername},
-		Trainings: trainings,
+		Groups:    groups,
 		RegCounts: counts,
+		Period:    period,
+		From:      r.URL.Query().Get("from"),
+		To:        r.URL.Query().Get("to"),
+		Total:     len(filtered),
+		TotalRegs: totalRegs,
+		Today:     time.Now().Format("2006-01-02"),
 	}
 	if err := a.renderer.Render(w, "admin_trainings", data); err != nil {
 		a.logger.Error("render admin_trainings", "err", err)

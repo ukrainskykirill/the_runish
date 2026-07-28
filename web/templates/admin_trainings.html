@@ -1,46 +1,65 @@
 {{define "content"}}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
-    <h2 style="font-size:1.4rem">Расписание тренировок ({{len .Trainings}})</h2>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h2 style="font-size:1.4rem">Расписание тренировок</h2>
     <a href="/admin/trainings/new" class="btn">+ Добавить тренировку</a>
 </div>
 
+<div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;margin-bottom:1rem">
+    <a href="/admin/trainings?period=upcoming" class="btn btn-sm {{if eq .Period "upcoming"}}{{else}}btn-secondary{{end}}">Предстоящие</a>
+    <a href="/admin/trainings?period=week" class="btn btn-sm {{if eq .Period "week"}}{{else}}btn-secondary{{end}}">Эта неделя</a>
+    <a href="/admin/trainings?period=month" class="btn btn-sm {{if eq .Period "month"}}{{else}}btn-secondary{{end}}">Этот месяц</a>
+    <a href="/admin/trainings?period=past" class="btn btn-sm {{if eq .Period "past"}}{{else}}btn-secondary{{end}}">Прошедшие</a>
+    <a href="/admin/trainings?period=all" class="btn btn-sm {{if eq .Period "all"}}{{else}}btn-secondary{{end}}">Все</a>
+
+    <form method="GET" action="/admin/trainings" style="display:flex;gap:0.4rem;align-items:center;margin-left:auto">
+        <input type="hidden" name="period" value="custom">
+        <input type="date" name="from" value="{{.From}}" style="width:auto" title="С даты">
+        <span style="color:#9ca3af">—</span>
+        <input type="date" name="to" value="{{.To}}" style="width:auto" title="По дату включительно">
+        <button type="submit" class="btn btn-secondary btn-sm">Показать</button>
+    </form>
+</div>
+
+<p style="color:#6b7280;margin-bottom:1.2rem">
+    Тренировок: <strong>{{.Total}}</strong> · Записей всего: <strong>{{.TotalRegs}}</strong>
+</p>
+
+{{range .Groups}}
+<h3 style="font-size:1.05rem;margin:1.6rem 0 0.6rem">{{.Label}} <span style="color:#9ca3af;font-weight:400">({{len .Trainings}})</span></h3>
 <table>
     <thead>
         <tr>
-            <th>ID</th>
             <th>Дата</th>
             <th>Время</th>
             <th>Тип</th>
             <th>Название</th>
             <th>Место</th>
             <th>Записи</th>
-            <th>Порядок</th>
             <th>Активна</th>
             <th>Действия</th>
         </tr>
     </thead>
     <tbody>
         {{range .Trainings}}
-        <tr>
-            <td>{{.ID}}</td>
+        <tr{{if lt .TrainingDate $.Today}} style="opacity:0.55"{{end}}>
             <td style="white-space:nowrap">{{.TrainingDate}} <span style="color:#9ca3af">({{weekday .Weekday}})</span></td>
             <td>{{.StartTime}}</td>
             <td>{{if eq .Kind "sunday_runish"}}Sunday Runish{{else}}Регулярная{{end}}</td>
             <td>{{.Title}}</td>
             <td>{{.Place}}</td>
             <td><a href="/admin/trainings/{{.ID}}/registrations" class="btn btn-secondary btn-sm">👥 {{index $.RegCounts .ID}}</a></td>
-            <td>{{.SortOrder}}</td>
             <td>{{if .IsActive}}✅{{else}}❌{{end}}</td>
             <td style="white-space:nowrap">
-                <a href="/admin/trainings/{{.ID}}/edit" class="btn btn-secondary btn-sm">✏️ Изменить</a>
+                <a href="/admin/trainings/{{.ID}}/edit" class="btn btn-secondary btn-sm">✏️</a>
                 <form method="POST" action="/admin/trainings/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить тренировку «{{.Title}}»?')">
-                    <button type="submit" class="btn btn-danger btn-sm">🗑 Удалить</button>
+                    <button type="submit" class="btn btn-danger btn-sm">🗑</button>
                 </form>
             </td>
         </tr>
-        {{else}}
-        <tr><td colspan="10" style="text-align:center;color:#9ca3af;padding:2rem">Тренировок пока нет</td></tr>
         {{end}}
     </tbody>
 </table>
+{{else}}
+<p style="text-align:center;color:#9ca3af;padding:2rem">За выбранный период тренировок нет</p>
+{{end}}
 {{end}}

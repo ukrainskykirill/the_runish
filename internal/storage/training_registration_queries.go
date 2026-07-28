@@ -23,7 +23,6 @@ func (s *Store) ListUpcomingSessions(ctx context.Context, userID int64) ([]domai
 	now := time.Now().In(loc)
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 	horizonEnd := today.AddDate(0, 0, s.TrainingWindowDays(ctx))
-	todayStr := today.Format("2006-01-02")
 	horizonStr := horizonEnd.Format("2006-01-02")
 
 	trainings, err := s.ListTrainings(ctx, false)
@@ -41,8 +40,8 @@ func (s *Store) ListUpcomingSessions(ctx context.Context, userID int64) ([]domai
 		       count(r.id) FILTER (WHERE r.status = 'active')
 		FROM training_sessions ts
 		LEFT JOIN training_registrations r ON r.session_id = ts.id
-		WHERE ts.session_date >= $1 AND ts.session_date < $2
-		GROUP BY ts.id`, todayStr, horizonStr)
+		WHERE ts.session_date < $1
+		GROUP BY ts.id`, horizonStr)
 	if err != nil {
 		return nil, fmt.Errorf("list sessions: %w", err)
 	}
@@ -75,7 +74,7 @@ func (s *Store) ListUpcomingSessions(ctx context.Context, userID int64) ([]domai
 			SELECT ts.training_id, to_char(ts.session_date,'YYYY-MM-DD'), r.id
 			FROM training_registrations r
 			JOIN training_sessions ts ON ts.id = r.session_id
-			WHERE r.user_id = $1 AND r.status = 'active' AND ts.session_date >= $2`, userID, todayStr)
+			WHERE r.user_id = $1 AND r.status = 'active'`, userID)
 		if err != nil {
 			return nil, fmt.Errorf("list my regs: %w", err)
 		}
@@ -163,13 +162,14 @@ func (s *Store) ListUpcomingSessions(ctx context.Context, userID int64) ([]domai
 		if err != nil {
 			continue
 		}
-		if date.Before(today) || !date.Before(horizonEnd) {
+		if !date.Before(horizonEnd) {
 			continue
 		}
 		start, err := occurrenceStart(date, t.StartTime, loc)
-		if err != nil || !start.After(now) {
+		if err != nil {
 			continue
 		}
+		past := !start.After(now)
 		ds := t.TrainingDate
 		key := occKey(t.ID, ds)
 		info, hasSession := sessions[key]
@@ -184,6 +184,7 @@ func (s *Store) ListUpcomingSessions(ctx context.Context, userID int64) ([]domai
 			Place:       t.Place,
 			PlaceURL:    t.PlaceURL,
 			SessionDate: ds,
+			Past:        past,
 			Capacity:    t.Capacity,
 		}
 		if hasSession {

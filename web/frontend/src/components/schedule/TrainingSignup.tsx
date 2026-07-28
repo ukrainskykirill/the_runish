@@ -23,7 +23,7 @@ export function TrainingSignup() {
   const [reloadKey, setReloadKey] = useState(0);
 
   const { data, loading, error } = useAsync(() => api.trainingsUpcoming(), [reloadKey, user?.id]);
-  const occurrences = data?.occurrences ?? [];
+  const occurrences = (data?.occurrences ?? []).filter((o) => !o.past);
 
   async function reload() {
     setReloadKey((k) => k + 1);

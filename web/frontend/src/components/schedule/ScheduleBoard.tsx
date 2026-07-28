@@ -80,6 +80,10 @@ function CalEventFoot({ occ, busy, onRegister, onCancel }: Omit<EventProps, 'var
   const stop = (e: MouseEvent) => e.stopPropagation();
 
   switch (mode) {
+    case 'past':
+      return <div className="cal-ev-foot"><span className="cal-reg-note">Завершена</span></div>;
+    case 'attended':
+      return <div className="cal-ev-foot"><span className="cal-reg-tag">✓ Вы были записаны</span></div>;
     case 'registered':
       return (
         <div className="cal-ev-foot" onClick={stop}>
@@ -142,7 +146,7 @@ function ScheduleEvent({ occ, variant, expanded, onToggle, busy, onRegister, onC
 
   return (
     <div
-      className={cls + (hasDesc ? ' has-desc' : '') + (expanded ? ' open' : '')}
+      className={cls + (hasDesc ? ' has-desc' : '') + (expanded ? ' open' : '') + (occ.past ? ' is-past' : '')}
       role={hasDesc ? 'button' : undefined}
       tabIndex={hasDesc ? 0 : undefined}
       aria-expanded={hasDesc ? expanded : undefined}
@@ -209,10 +213,13 @@ export function ScheduleBoard() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   let lastStr = ymd(today);
+  let firstStr = ymd(today);
   for (const o of occurrences) {
     if (o.session_date > lastStr) lastStr = o.session_date;
+    if (o.session_date < firstStr) firstStr = o.session_date;
   }
   const lastDate = parseYmd(lastStr);
+  const firstDate = parseYmd(firstStr);
 
   const curMonday = new Date(today);
   curMonday.setDate(today.getDate() - (isoWeekday(today) - 1));
@@ -236,6 +243,9 @@ export function ScheduleBoard() {
   const lastMonday = new Date(lastDate);
   lastMonday.setDate(lastDate.getDate() - (isoWeekday(lastDate) - 1));
   const maxWeekOffset = Math.max(0, Math.round((lastMonday.getTime() - curMonday.getTime()) / (7 * 86400000)));
+  const firstMonday = new Date(firstDate);
+  firstMonday.setDate(firstDate.getDate() - (isoWeekday(firstDate) - 1));
+  const minWeekOffset = Math.min(0, Math.round((firstMonday.getTime() - curMonday.getTime()) / (7 * 86400000)));
 
   const monthFirst = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
   const mYear = monthFirst.getFullYear();
@@ -259,12 +269,19 @@ export function ScheduleBoard() {
     0,
     (lastDate.getFullYear() - today.getFullYear()) * 12 + (lastDate.getMonth() - today.getMonth()),
   );
+  const minMonthOffset = Math.min(
+    0,
+    (firstDate.getFullYear() - today.getFullYear()) * 12 + (firstDate.getMonth() - today.getMonth()),
+  );
 
   const isWeek = view === 'week';
   const headTitle = isWeek ? (weekOffset === 0 ? 'Эта неделя' : 'Неделя') : `${MONTHS_NOM[mMonth]} ${mYear}`;
-  const canPrev = isWeek ? weekOffset > 0 : monthOffset > 0;
+  const canPrev = isWeek ? weekOffset > minWeekOffset : monthOffset > minMonthOffset;
   const canNext = isWeek ? weekOffset < maxWeekOffset : monthOffset < maxMonthOffset;
-  const goPrev = () => (isWeek ? setWeekOffset((w) => Math.max(0, w - 1)) : setMonthOffset((m) => Math.max(0, m - 1)));
+  const goPrev = () =>
+    isWeek
+      ? setWeekOffset((w) => Math.max(minWeekOffset, w - 1))
+      : setMonthOffset((m) => Math.max(minMonthOffset, m - 1));
   const goNext = () =>
     isWeek ? setWeekOffset((w) => Math.min(maxWeekOffset, w + 1)) : setMonthOffset((m) => Math.min(maxMonthOffset, m + 1));
 

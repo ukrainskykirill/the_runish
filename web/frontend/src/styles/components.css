@@ -463,8 +463,9 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
 .cal-mev .cal-reg-btn { padding: 5px 10px; font-size: 11px; }
 /* Прошедшие занятия: светлая карточка с тёмным текстом (цвета «на красном» здесь не читаются). */
 .cal-ev.is-past, .cal-mev.is-past {
-  background: var(--cream-deep);
-  border: var(--border-w) solid var(--border-soft);
+  background-color: var(--cream-deep);
+  background-image: linear-gradient(150deg, rgba(224,51,10,0.18), rgba(224,51,10,0.04) 62%, rgba(224,51,10,0) 100%);
+  border: var(--border-w) solid rgba(224,51,10,0.22);
   color: var(--text-body);
 }
 .cal-ev.is-past:hover, .cal-mev.is-past:hover { transform: none; box-shadow: none; }

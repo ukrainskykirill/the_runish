@@ -101,6 +101,34 @@ export interface TrainingRegistration {
   created_at: string;
 }
 
+export interface PlanDay {
+  date: string; // "YYYY-MM-DD"
+  weekday: number; // 1 = понедельник
+  kind: string;
+  task: string;
+  link_label?: string;
+  link_url?: string;
+}
+
+export interface PlanGroup {
+  title: string;
+  days: PlanDay[];
+}
+
+export interface PlanMaterial {
+  label: string;
+  url: string;
+}
+
+export interface PlanResponse {
+  week_start: string;
+  label: string;
+  /** Все опубликованные недели, от новой к старой. */
+  weeks: string[];
+  groups: PlanGroup[];
+  materials: PlanMaterial[];
+}
+
 export interface User {
   id: number;
   telegram_id: number;

@@ -6,6 +6,7 @@ import type {
   HomeResponse,
   MerchItem,
   NewsItem,
+  PlanResponse,
   TelegramStartResponse,
   Training,
   TrainingOccurrence,
@@ -84,6 +85,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ registration_id: registrationId }),
     }),
+
+  /** Недельный план тренировок. 403 subscription_required — без активной подписки. */
+  plan: (week?: string, signal?: AbortSignal) =>
+    request<PlanResponse>(week ? `/plan?week=${encodeURIComponent(week)}` : '/plan', { signal }),
 
   cart: () => request<CartResponse>('/cart'),
   cartAdd: (serviceId: number) =>

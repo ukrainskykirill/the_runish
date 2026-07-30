@@ -1,0 +1,175 @@
+{{define "plan_group"}}
+<div class="plan-group" data-group>
+    <div class="plan-group-head">
+        <input type="text" name="g{{.Index}}_title" value="{{.Title}}"
+               placeholder="Например: Группа начинающие The Runish Start">
+        <button type="button" class="btn btn-danger btn-sm" data-remove-group>Удалить группу</button>
+    </div>
+    <table class="plan-table">
+        <thead>
+            <tr>
+                <th style="width:5.5rem">Дата</th>
+                <th style="width:3.5rem">День</th>
+                <th style="width:22%">Тип тренировки</th>
+                <th>Задание на тренировке</th>
+                <th style="width:22%">Ссылка (необязательно)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{$g := .Index}}
+            {{range $di, $day := .Days}}
+            <tr>
+                <td style="white-space:nowrap">{{$day.Label}}</td>
+                <td style="color:#9ca3af">{{$day.Weekday}}</td>
+                <td><input type="text" name="g{{$g}}_d{{$di}}_kind" value="{{$day.Kind}}" placeholder="Лёгкий кросс / выходной"></td>
+                <td><textarea name="g{{$g}}_d{{$di}}_task" rows="2" placeholder="50 мин, ЧСС 140">{{$day.Task}}</textarea></td>
+                <td>
+                    <input type="text" name="g{{$g}}_d{{$di}}_link_label" value="{{$day.LinkLabel}}" placeholder="ОФП">
+                    <input type="url" name="g{{$g}}_d{{$di}}_link_url" value="{{$day.LinkURL}}" placeholder="https://" style="margin-top:.3rem">
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}
+
+{{define "content"}}
+<style>
+    .plan-group {
+        border: 1px solid rgba(122,84,30,0.14);
+        border-radius: 14px;
+        padding: 1rem;
+        margin-bottom: 1.1rem;
+        background: rgba(255,253,250,0.6);
+    }
+    .plan-group-head { display: flex; gap: .6rem; align-items: center; margin-bottom: .8rem; }
+    .plan-group-head input { font-weight: 600; }
+    .plan-table td { vertical-align: top; }
+    .plan-table textarea { min-height: 2.6rem; resize: vertical; }
+    .plan-material { display: flex; gap: .5rem; align-items: center; margin-bottom: .5rem; max-width: 640px; }
+    .plan-actions {
+        display: flex; flex-wrap: wrap; gap: .75rem; align-items: center;
+        margin-top: 1.5rem; padding-top: 1.2rem;
+        border-top: 1px solid rgba(122,84,30,0.14);
+    }
+    .alert-success {
+        margin-bottom: 1rem; padding: .6rem 1rem; border-radius: 8px;
+        background: #dcfce7; color: #166534;
+    }
+</style>
+
+<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem">
+    <h2 style="font-size:1.4rem">
+        План на неделю {{.Label}}
+        {{if .Plan.IsPublished}}
+        <span style="font-size:.8rem;color:#15803d;font-weight:600">· опубликован</span>
+        {{else}}
+        <span style="font-size:.8rem;color:#9ca3af;font-weight:600">· черновик</span>
+        {{end}}
+    </h2>
+    <a href="{{.Base}}/plans" class="btn btn-secondary btn-sm">Ко всем неделям</a>
+</div>
+
+{{if .Error}}<div class="alert-error">{{.Error}}</div>{{end}}
+{{if .Saved}}<div class="alert-success">Сохранено</div>{{end}}
+{{if .NotifySent}}
+<div class="alert-success">Уведомление отправлено: {{.NotifySent}}, не доставлено: {{.NotifyFailed}}</div>
+{{end}}
+
+<form method="POST" action="{{.Base}}/plans/{{.Plan.ID}}" id="plan-form">
+    <input type="hidden" name="groups_count" id="groups_count" value="{{len .Groups}}">
+    <div id="plan-groups">
+        {{range .Groups}}{{template "plan_group" .}}{{end}}
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="add-group">+ Добавить группу</button>
+
+    <h3 style="font-size:1.05rem;margin:1.8rem 0 .6rem">Материалы</h3>
+    <p style="color:#6b7280;margin-bottom:.8rem;font-size:.9rem">
+        Общие ссылки для всей недели — например «ОФП» и «Растяжка».
+    </p>
+    <input type="hidden" name="materials_count" id="materials_count" value="{{len .Materials}}">
+    <div id="plan-materials">
+        {{range $mi, $m := .Materials}}
+        <div class="plan-material" data-material>
+            <input type="text" name="m{{$mi}}_label" value="{{$m.Label}}" placeholder="ОФП">
+            <input type="url" name="m{{$mi}}_url" value="{{$m.URL}}" placeholder="https://">
+            <button type="button" class="btn btn-danger btn-sm" data-remove-material>×</button>
+        </div>
+        {{end}}
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="add-material">+ Добавить материал</button>
+
+    <div class="plan-actions">
+        <button type="submit" class="btn">Сохранить</button>
+        {{if .Plan.IsPublished}}
+        <button type="submit" class="btn btn-secondary" formaction="{{.Base}}/plans/{{.Plan.ID}}/unpublish"
+                formnovalidate>Снять с публикации</button>
+        {{else}}
+        <button type="submit" class="btn" formaction="{{.Base}}/plans/{{.Plan.ID}}/publish">Сохранить и опубликовать</button>
+        {{end}}
+
+        {{if .Plan.IsPublished}}
+        <button type="submit" class="btn" formaction="{{.Base}}/plans/{{.Plan.ID}}/notify" formnovalidate
+                {{if not .BotConfigured}}disabled title="Telegram-бот не настроен"{{end}}
+                onclick="return confirm('Отправить уведомление о плане всем с активной подпиской?')">
+            Отправить уведомление
+        </button>
+        {{else}}
+        <button type="button" class="btn" disabled title="Сначала опубликуйте план">Отправить уведомление</button>
+        {{end}}
+
+        {{if .Plan.NotifiedAt}}
+        <span style="color:#6b7280;font-size:.88rem">
+            Последняя отправка: {{formatDateTimePtr .Plan.NotifiedAt}} · {{.Plan.NotifySent}} чел.
+        </span>
+        {{end}}
+    </div>
+</form>
+
+<template id="group-template">
+    {{template "plan_group" .EmptyGroup}}
+</template>
+<template id="material-template">
+    <div class="plan-material" data-material>
+        <input type="text" name="m__I___label" placeholder="ОФП">
+        <input type="url" name="m__I___url" placeholder="https://">
+        <button type="button" class="btn btn-danger btn-sm" data-remove-material>×</button>
+    </div>
+</template>
+
+<script>
+(function () {
+    var groupsCount = document.getElementById('groups_count');
+    var materialsCount = document.getElementById('materials_count');
+
+    // Индексы только растут: удалённые блоки просто не приходят в POST,
+    // и сервер их пропускает.
+    function appendFrom(tplId, container, counter) {
+        var idx = parseInt(counter.value, 10) || 0;
+        var html = document.getElementById(tplId).innerHTML.replace(/__I__/g, String(idx));
+        var wrap = document.createElement('div');
+        wrap.innerHTML = html;
+        while (wrap.firstElementChild) container.appendChild(wrap.firstElementChild);
+        counter.value = String(idx + 1);
+    }
+
+    document.getElementById('add-group').addEventListener('click', function () {
+        appendFrom('group-template', document.getElementById('plan-groups'), groupsCount);
+    });
+    document.getElementById('add-material').addEventListener('click', function () {
+        appendFrom('material-template', document.getElementById('plan-materials'), materialsCount);
+    });
+
+    document.getElementById('plan-form').addEventListener('click', function (e) {
+        var group = e.target.closest('[data-remove-group]');
+        if (group) {
+            if (confirm('Удалить эту группу из плана?')) group.closest('[data-group]').remove();
+            return;
+        }
+        var material = e.target.closest('[data-remove-material]');
+        if (material) material.closest('[data-material]').remove();
+    });
+})();
+</script>
+{{end}}

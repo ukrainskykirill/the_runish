@@ -58,10 +58,11 @@ func main() {
 
 	renderer, err := render.New(
 		os.DirFS("web/templates"),
-		nil,
+		[]string{"login_layout.html"},
 		[]string{"admin_layout.html"},
 		[]string{
 			"admin_login.html",
+			"coach_login.html",
 			"admin_dashboard.html",
 			"admin_services.html",
 			"admin_service_form.html",
@@ -70,6 +71,9 @@ func main() {
 			"admin_news_form.html",
 			"admin_merch.html",
 			"admin_merch_form.html",
+			"admin_plans.html",
+			"admin_plan_new.html",
+			"admin_plan_form.html",
 			"admin_trainings.html",
 			"admin_training_form.html",
 			"admin_training_registrations.html",

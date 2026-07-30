@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, formatDate, formatPrice } from '../api/client';
-import type { Order, SurveyResponse } from '../api/types';
+import type { Order, PlanResponse, SurveyResponse } from '../api/types';
+import { WeekPlanView } from '../components/plan/WeekPlanView';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { useAsync } from '../lib/useAsync';
@@ -35,6 +36,12 @@ export function ProfilePage() {
   const [cancelingId, setCancelingId] = useState<number | null>(null);
   const survey = useAsync<SurveyResponse>((signal) => api.survey(signal), []);
   const surveyDone = survey.data?.status === 'completed';
+  // План — часть подписки: без активной подписки секцию не показываем и не грузим.
+  const hasSub = subscriptions.length > 0;
+  const plan = useAsync<PlanResponse | null>(
+    (signal) => (hasSub ? api.plan(undefined, signal) : Promise.resolve(null)),
+    [hasSub],
+  );
 
   useEffect(() => {
     if (!loading && !user) navigate('/', { replace: true });
@@ -128,6 +135,29 @@ export function ProfilePage() {
           )}
         </div>
       </section>
+
+      {hasSub && (
+        <section className="sec">
+          <div className="wrap">
+            <div className="sec-head between">
+              <div>
+                <div className="eb">Подписка</div>
+                <h2 className="d2">План тренировок</h2>
+              </div>
+              <Link className="btn btn-ghost btn-sm" to="/plan">
+                Все недели
+              </Link>
+            </div>
+            {plan.loading ? (
+              <div className="empty-state">Загрузка…</div>
+            ) : plan.error || !plan.data ? (
+              <div className="empty-state">Не удалось загрузить план</div>
+            ) : (
+              <WeekPlanView groups={plan.data.groups} materials={plan.data.materials} />
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="sec">
         <div className="wrap">

@@ -12,13 +12,14 @@ import { CartIcon, ChevronDownIcon, CloseIcon, MenuIcon, TelegramIcon } from '..
 const navLinkClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'active' : undefined);
 
 export function Header() {
-  const { user } = useAuth();
+  const { user, subscriptions } = useAuth();
   const { count } = useCart();
   const { openLoginModal } = useUI();
   const [cartOpen, setCartOpen] = useState(false);
   const [acctOpen, setAcctOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const hasSub = subscriptions.length > 0;
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -54,6 +55,11 @@ export function Header() {
           <NavLink to="/merch" className={navLinkClass}>
             Мерч
           </NavLink>
+          {hasSub && (
+            <NavLink to="/plan" className={navLinkClass}>
+              План
+            </NavLink>
+          )}
         </nav>
         <div className="hdr-right" ref={ref}>
           <button
@@ -117,6 +123,11 @@ export function Header() {
           <NavLink to="/merch" className={navLinkClass} onClick={() => setMobileMenuOpen(false)}>
             Мерч
           </NavLink>
+          {hasSub && (
+            <NavLink to="/plan" className={navLinkClass} onClick={() => setMobileMenuOpen(false)}>
+              План
+            </NavLink>
+          )}
         </nav>
       )}
     </header>

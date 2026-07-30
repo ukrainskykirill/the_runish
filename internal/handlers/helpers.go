@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"therunish/internal/auth"
 	"therunish/internal/domain"
 )
 
@@ -14,6 +15,21 @@ type PageData struct {
 	ActiveNav       string
 	BotUsername     string
 	IsAuthenticated bool
+	// Role/PanelBase управляют сайдбаром: тренер видит только раздел планов,
+	// а формы и выход постятся на свой префикс (/coach или /admin).
+	Role      string
+	PanelBase string
+}
+
+func (p PageData) IsCoach() bool { return p.Role == auth.RoleCoach }
+
+// Base — префикс панели для ссылок в layout. Пустое значение (страницы админки,
+// которые его не заполняют) означает /admin.
+func (p PageData) Base() string {
+	if p.PanelBase == "" {
+		return "/admin"
+	}
+	return p.PanelBase
 }
 
 func parseID(r *http.Request) (int64, error) {

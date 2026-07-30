@@ -56,6 +56,7 @@ const (
 	SettingTmplPhoneWrongUser   = "tmpl_bot_phone_wrong_user"
 	SettingTmplPhoneBad         = "tmpl_bot_phone_bad"
 	SettingTmplPhoneSaved       = "tmpl_bot_phone_saved"
+	SettingTmplPlanPublished    = "tmpl_plan_published"
 )
 
 type MessageTemplateDef struct {
@@ -77,6 +78,7 @@ var messageTemplates = []MessageTemplateDef{
 	{SettingTmplPhoneWrongUser, "Поделились чужим контактом", "Поделитесь, пожалуйста, своим номером (кнопкой ниже).", "—"},
 	{SettingTmplPhoneBad, "Номер не распознан", "Не удалось распознать номер — нужен российский телефон.", "—"},
 	{SettingTmplPhoneSaved, "Номер сохранён", "✅ Спасибо! Телефон сохранён — теперь можно оплачивать на сайте.", "—"},
+	{SettingTmplPlanPublished, "План на неделю опубликован", "🏃 План тренировок на неделю {week} готов!\n\nСмотреть: {url}", "{week} {url}"},
 }
 
 var botTemplateDefaults = func() map[string]string {

@@ -39,6 +39,9 @@ type Config struct {
 	AdminLogin    string
 	AdminPassword string
 
+	CoachLogin    string
+	CoachPassword string
+
 	PaymentProvider string
 
 	RunWorker bool
@@ -76,6 +79,8 @@ func Load() (Config, error) {
 		AdminToken:         os.Getenv("ADMIN_TOKEN"),
 		AdminLogin:         getenv("ADMIN_LOGIN", "test"),
 		AdminPassword:      getenv("ADMIN_PASSWORD", "1111"),
+		CoachLogin:         getenv("COACH_LOGIN", "runishtren"),
+		CoachPassword:      getenv("COACH_PASSWORD", "12345678"),
 		PaymentProvider:    getenv("PAYMENT_PROVIDER", "mock"),
 		RunWorker:          getenv("RUN_WORKER", "") == "1",
 		SentryDSN:          os.Getenv("SENTRY_DSN"),
@@ -147,12 +152,12 @@ func DumpEnv(logger *slog.Logger) {
 	plain := []string{
 		"HTTP_ADDR", "BASE_URL", "BOT_USERNAME", "VK_CLIENT_ID", "PAYMENT_PROVIDER", "RUN_WORKER",
 		"SESSION_TTL", "TBANK_API_BASE", "TBANK_TAXATION", "TBANK_TAX",
-		"TBANK_PAYMENT_OBJECT", "TBANK_PAYMENT_METHOD", "ADMIN_LOGIN",
+		"TBANK_PAYMENT_OBJECT", "TBANK_PAYMENT_METHOD", "ADMIN_LOGIN", "COACH_LOGIN",
 		"SENTRY_ENVIRONMENT", "ALERT_CHAT_ID", "LOG_LEVEL",
 	}
 	secret := []string{
 		"TBANK_TERMINAL_KEY", "TBANK_PASSWORD", "BOT_TOKEN", "ADMIN_TOKEN",
-		"ADMIN_PASSWORD", "SENTRY_DSN", "ALERT_BOT_TOKEN", "VK_CLIENT_SECRET",
+		"ADMIN_PASSWORD", "COACH_PASSWORD", "SENTRY_DSN", "ALERT_BOT_TOKEN", "VK_CLIENT_SECRET",
 	}
 
 	// Всё пишем прямо в текст сообщения (msg), т.к. просмотрщик логов Amvera

@@ -44,9 +44,13 @@ docker compose up -d --build        # brings up db + web + worker
 ### Access / env (see `internal/config/config.go`, `.env.example`)
 - **Admin:** `/admin/login`, defaults login `ADMIN_LOGIN=test`, password `ADMIN_PASSWORD=1111`.
   Session — cookie `runish_admin` (table `admin_sessions`). Guard — `RequireAdminToken`.
+- **Coach:** `/coach/login`, defaults `COACH_LOGIN=runishtren` / `COACH_PASSWORD=12345678`.
+  Separate cookie `runish_coach`, same `admin_sessions` table but with `role='coach'`. Guard —
+  `auth.RequirePanel(store, roles…)`. The coach only sees the **Планы** section; the admin sees
+  it too (same handlers mounted under both `/coach/plans` and `/admin/plans`, see `panelBase`).
 - Key env: `DATABASE_URL`, `BASE_URL`, `PAYMENT_PROVIDER` (`tbank|mock`),
   `TBANK_TERMINAL_KEY/PASSWORD/API_BASE`, `TBANK_TAXATION/TAX/PAYMENT_OBJECT/PAYMENT_METHOD` (54-FZ receipt),
-  `BOT_TOKEN/BOT_USERNAME`, `SESSION_TTL`, `ADMIN_LOGIN/PASSWORD/TOKEN`.
+  `BOT_TOKEN/BOT_USERNAME`, `SESSION_TTL`, `ADMIN_LOGIN/PASSWORD/TOKEN`, `COACH_LOGIN/PASSWORD`.
 
 ---
 
@@ -98,6 +102,10 @@ static + an index.html fallback (`serveSPA`). `web/templates/*.html` are **admin
 - **`app_settings`** — key-value: `first30_promo_enabled`, `subscription_reminder_days` (e.g. `7,3,1`).
 - **`survey_responses`** — onboarding survey state/answers (`pending|in_progress|completed`).
 - **`trainings`** — schedule (recurring, by day of week `weekday` 1..7 + `start_time`).
+- **`training_plans`** — weekly plan written by the coach. One row per week (`week_start`, always a
+  Monday, UNIQUE), `status` `draft|published`, and the whole grid in JSONB `groups`
+  (`[{title, days:[{date, weekday, kind, task, link_label, link_url} ×7]}]`) + `materials`
+  (`[{label,url}]`). Stored as JSONB because the editor saves the whole grid in one submit.
 - Others: `news`, `merch`, `cart_items` (cart keyed by `session_id`), `sessions`, `admin_sessions`,
   `login_requests` (deep-link login), `subscription_reminder_logs`.
 
@@ -170,7 +178,22 @@ revoked). Partial (`PARTIAL_REFUNDED`) — only records the status (manual handl
 - `worker.runReminders` sends a Telegram message N days before expiry; logged in
   `subscription_reminder_logs` to avoid duplicates.
 
-### 5.10 "Free trial" gating (`/api/me`)
+### 5.10 Weekly training plan (coach)
+- The coach fills a week at `/coach/plans/{id}/edit`: several **groups** («The Runish Start»,
+  «The Runish Progress»), each with 7 rows `Дата · День недели · Тип тренировки · Задание`.
+  Dates are always derived from `week_start` — never trusted from the form.
+- Flow **draft → publish → notify**. «Сохранить и опубликовать» saves the grid first (both buttons
+  submit the same form), so publishing never loses unsaved edits.
+- **«Отправить уведомление»** is enabled only for a published plan. It sends
+  `tmpl_plan_published` (editable in `/admin/settings`, placeholders `{week}` `{url}`) to
+  `ListNotificationUsers(ctx, "active")` — i.e. **only users with an active subscription** and an
+  open bot dialog — via the shared `App.broadcast` helper. Result is stored in
+  `notified_at`/`notify_sent`.
+- **The plan is part of the paid subscription:** `GET /api/plan` returns
+  `403 subscription_required` without an active subscription, and the SPA hides the «План» nav item
+  and the `/me` section entirely (`subscriptions.length === 0`).
+
+### 5.11 "Free trial" gating (`/api/me`)
 `CanBookFreeLesson = !hasConfirmedPayments && !entry_fee_paid && !hasAnySubscription`
 (the trial is only for brand-new users). `CanChooseSubscription = no active subscriptions`.
 
@@ -180,7 +203,7 @@ revoked). Partial (`PARTIAL_REFUNDED`) — only records the status (manual handl
 
 **Public JSON** (prefix `/api`): `me`, `home` (aggregate for the homepage), `catalog`, `news`,
 `news/{id}`, `merch`, `schedule`, `cart` (GET/POST), `cart/remove`, `checkout`,
-`auth/telegram/{start,callback,status,complete}`, `auth/dev`, `auth/logout`.
+`auth/telegram/{start,callback,status,complete}`, `auth/dev`, `auth/logout`, `plan` (RequireUser).
 - `LoadUser` (soft middleware) is attached to `me`, `catalog`, `cart*` — so prices/gating are computed
   for the current user. `checkout` — `RequireUser`.
 
@@ -190,12 +213,16 @@ revoked). Partial (`PARTIAL_REFUNDED`) — only records the status (manual handl
 `trainings` / `merch`, `users` + `users/{id}` (+ `entry-fee`, subscriptions: add/edit/extend/delete),
 `payments` (+ `{id}/refund`), `settings` (+ `settings/reminders`), `notifications/send`.
 
+**Plans (`/coach/plans` and `/admin/plans`, HTML, `RequirePanel(admin, coach)`):** list / `new` /
+`{id}/edit` / `{id}` (save) / `{id}/publish` / `{id}/unpublish` / `{id}/notify` / `{id}/delete`.
+Plus `/coach/login` + `/coach/logout`.
+
 ---
 
 ## 7. Frontend (`web/frontend/`)
 
 - **Routes** (`src/App.tsx`): `/`, `/runners` (catalog), `/news`, `/schedule`, `/merch`, `/cart`,
-  `/me`, `/auth/telegram`, `/legal/offer`, `/legal/privacy`, `/payment/success|fail`, `*` (404).
+  `/me`, `/plan` (weekly plan, subscribers only), `/auth/telegram`, `/legal/offer`, `/legal/privacy`, `/payment/success|fail`, `*` (404).
 - **API client:** `src/api/client.ts` (`api.*`), types — `src/api/types.ts`.
 - **Contexts:** `CartContext` (add/remove/refresh; handles errors — e.g. shows a toast "subscription
   already in cart"), `AuthContext`, `UIContext` (toasts, login modal).
@@ -220,7 +247,8 @@ revoked). Partial (`PARTIAL_REFUNDED`) — only records the status (manual handl
 - **T-Bank `PaymentId`**: string in `/Init`, number in the webhook → only via `flexID`.
 - **The receipt** is not built without the buyer's phone (a warning is logged, payment not blocked).
 - **Catalog seeding is not a migration** — it's `scripts/seed_catalog_v2.sql` (raw INSERT).
-- **A new admin template** → don't forget to add it to the list in `cmd/web/main.go`.
+- **A new admin template** → don't forget to add it to the list in `cmd/web/main.go`
+  (`internal/handlers/templates_test.go` parse-checks every file in `web/templates/`).
 - **Deleting entities with FKs** (services, etc.) is soft (`is_active=false`), since orders/
   subscriptions reference them; a hard delete fails.
 - The public site is **React**, not Go templates; storefront changes go in `web/frontend/src`, rebuild the image.

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -215,20 +216,7 @@ func (a *App) AdminSendNotificationSubmit(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	bot := telegram.New(a.cfg.BotToken)
-	var sent, failed int
-	for _, u := range users {
-		if err := bot.SendMessage(r.Context(), u.telegramID, text); err != nil {
-			var apiErr *telegram.APIError
-			if errors.As(err, &apiErr) && apiErr.IsForbidden() {
-				_ = a.store.SetBotDialogOpen(r.Context(), u.id, false)
-			}
-			a.logger.Warn("notifications: send failed", "err", err, "user_id", u.id)
-			failed++
-			continue
-		}
-		sent++
-	}
+	sent, failed := a.broadcast(r.Context(), users, text)
 
 	q := url.Values{}
 	q.Set("notify_sent", strconv.Itoa(sent))
@@ -239,4 +227,23 @@ func (a *App) AdminSendNotificationSubmit(w http.ResponseWriter, r *http.Request
 type notificationRecipient struct {
 	id         int64
 	telegramID int64
+}
+
+// broadcast рассылает текст списку получателей. Пользователи, заблокировавшие бота
+// (403), помечаются как закрывшие диалог, чтобы не долбиться в них снова.
+func (a *App) broadcast(ctx context.Context, users []notificationRecipient, text string) (sent, failed int) {
+	bot := telegram.New(a.cfg.BotToken)
+	for _, u := range users {
+		if err := bot.SendMessage(ctx, u.telegramID, text); err != nil {
+			var apiErr *telegram.APIError
+			if errors.As(err, &apiErr) && apiErr.IsForbidden() {
+				_ = a.store.SetBotDialogOpen(ctx, u.id, false)
+			}
+			a.logger.Warn("notifications: send failed", "err", err, "user_id", u.id)
+			failed++
+			continue
+		}
+		sent++
+	}
+	return sent, failed
 }

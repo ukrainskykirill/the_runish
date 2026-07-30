@@ -776,3 +776,72 @@ footer { background: var(--cream-light); border-top: var(--border-w) solid var(-
   .survey-card { padding: 22px; }
   .survey-prompt { font-size: 28px; }
 }
+
+/* ─── Недельный план тренировок ─── */
+.plan-groups {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+.plan-card {
+  border: var(--border-w) solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+.plan-card-title {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.15;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.plan-days { list-style: none; margin: 0; padding: 0; }
+.plan-day {
+  display: flex;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.plan-day:last-child { border-bottom: none; }
+.plan-day.rest { opacity: 0.5; }
+.plan-day.today { background: rgba(224, 51, 10, 0.06); }
+.plan-day-when {
+  flex: 0 0 46px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-faint);
+}
+.plan-day-when b {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  color: var(--text-strong);
+}
+.plan-day-body { min-width: 0; }
+.plan-day-kind { font-weight: 600; font-size: var(--fs-body); color: var(--text-strong); }
+.plan-day-task { margin-top: 4px; font-size: 14px; color: var(--text-body); white-space: pre-line; }
+.plan-day-link { display: inline-block; margin-top: 6px; font-size: 14px; color: var(--accent); }
+.plan-materials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+.plan-materials .lab {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.plan-weeks { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 24px; }
+.plan-weeks .nm { font-family: var(--font-mono); font-size: 14px; color: var(--text-strong); }
+@media (max-width: 720px) {
+  .plan-groups { grid-template-columns: 1fr; }
+}

@@ -16,7 +16,9 @@ type Renderer struct {
 	funcMap   template.FuncMap
 }
 
-func New(fsys fs.FS, layouts []string, adminLayouts []string, pages []string) (*Renderer, error) {
+// New собирает шаблоны страниц. Страницы входа (`*_login`) делят общую вёрстку
+// loginLayouts, остальные `admin_*` — сайдбар-лейаут adminLayouts.
+func New(fsys fs.FS, loginLayouts []string, adminLayouts []string, pages []string) (*Renderer, error) {
 	r := &Renderer{
 		templates: make(map[string]*template.Template),
 		funcMap: template.FuncMap{
@@ -26,7 +28,8 @@ func New(fsys fs.FS, layouts []string, adminLayouts []string, pages []string) (*
 			"dict":           dict,
 			"formatDate":     formatDate,
 			"formatDateTime": formatDateTime,
-			"formatDatePtr":  formatDatePtr,
+			"formatDatePtr":     formatDatePtr,
+			"formatDateTimePtr": formatDateTimePtr,
 			"weekday":        weekdayName,
 			"add":            func(a, b int) int { return a + b },
 			"pct": func(val, max int64) int {
@@ -46,11 +49,12 @@ func New(fsys fs.FS, layouts []string, adminLayouts []string, pages []string) (*
 		name := pageName(page)
 		tmpl := template.New("").Funcs(r.funcMap)
 
-		useLayouts := layouts
-		if strings.HasPrefix(name, "admin_") && name != "admin_login" {
+		var useLayouts []string
+		switch {
+		case strings.HasSuffix(name, "_login"):
+			useLayouts = loginLayouts
+		case strings.HasPrefix(name, "admin_"):
 			useLayouts = adminLayouts
-		} else if name == "admin_login" {
-			useLayouts = nil
 		}
 
 		for _, l := range useLayouts {
@@ -140,4 +144,11 @@ func formatDatePtr(t *time.Time) string {
 		return "—"
 	}
 	return t.Format("02.01.2006")
+}
+
+func formatDateTimePtr(t *time.Time) string {
+	if t == nil {
+		return "—"
+	}
+	return t.Format("02.01.2006 15:04")
 }

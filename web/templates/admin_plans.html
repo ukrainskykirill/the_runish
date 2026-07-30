@@ -1,0 +1,56 @@
+{{define "content"}}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <h2 style="font-size:1.4rem">Планы тренировок</h2>
+    <a href="{{.Base}}/plans/new" class="btn">+ Новая неделя</a>
+</div>
+
+<p style="color:#6b7280;margin-bottom:1.2rem">
+    Опубликованный план виден в личном кабинете только тем, у кого активна подписка.
+</p>
+
+{{if .Plans}}
+<table>
+    <thead>
+        <tr>
+            <th>Неделя</th>
+            <th>Групп</th>
+            <th>Статус</th>
+            <th>Уведомление</th>
+            <th>Обновлён</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Plans}}
+        <tr>
+            <td style="white-space:nowrap"><strong>{{.Label}}</strong> <span style="color:#9ca3af">{{.WeekStart}}</span></td>
+            <td>{{.GroupCount}}</td>
+            <td>
+                {{if .IsPublished}}
+                <span style="color:#15803d;font-weight:600">Опубликован</span>
+                {{else}}
+                <span style="color:#9ca3af">Черновик</span>
+                {{end}}
+            </td>
+            <td>
+                {{if .NotifiedAt}}
+                {{formatDateTimePtr .NotifiedAt}} · {{.NotifySent}} чел.
+                {{else}}
+                <span style="color:#9ca3af">—</span>
+                {{end}}
+            </td>
+            <td style="white-space:nowrap">{{formatDateTime .UpdatedAt}}</td>
+            <td style="white-space:nowrap">
+                <a href="{{$.Base}}/plans/{{.ID}}/edit" class="btn btn-secondary btn-sm">✏️</a>
+                <form method="POST" action="{{$.Base}}/plans/{{.ID}}/delete" style="display:inline" onsubmit="return confirm('Удалить план на неделю {{.Label}}?')">
+                    <button type="submit" class="btn btn-danger btn-sm">🗑</button>
+                </form>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p style="text-align:center;color:#9ca3af;padding:2rem">Планов пока нет — создайте первую неделю</p>
+{{end}}
+{{end}}

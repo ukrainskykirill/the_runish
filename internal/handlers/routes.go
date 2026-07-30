@@ -30,6 +30,7 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /api/trainings/upcoming", a.mw.LoadUser(http.HandlerFunc(a.APITrainingsUpcoming)).ServeHTTP)
 	mux.HandleFunc("POST /api/trainings/register", a.mw.RequireUser(http.HandlerFunc(a.APITrainingRegister)).ServeHTTP)
 	mux.HandleFunc("POST /api/trainings/cancel", a.mw.RequireUser(http.HandlerFunc(a.APITrainingCancel)).ServeHTTP)
+	mux.HandleFunc("GET /api/plan", a.mw.RequireUser(http.HandlerFunc(a.APIPlan)).ServeHTTP)
 	mux.HandleFunc("GET /api/cart", a.mw.LoadUser(http.HandlerFunc(a.APICartView)).ServeHTTP)
 	mux.HandleFunc("POST /api/cart", a.mw.LoadUser(http.HandlerFunc(a.APICartAdd)).ServeHTTP)
 	mux.HandleFunc("POST /api/cart/remove", a.mw.LoadUser(http.HandlerFunc(a.APICartRemove)).ServeHTTP)
@@ -59,6 +60,28 @@ func (a *App) Routes() http.Handler {
 	mux.HandleFunc("GET /admin/login", a.AdminLoginPage)
 	mux.HandleFunc("POST /admin/login", a.AdminLoginSubmit)
 	mux.HandleFunc("POST /admin/logout", a.AdminLogout)
+
+	mux.HandleFunc("GET /coach/login", a.CoachLoginPage)
+	mux.HandleFunc("POST /coach/login", a.CoachLoginSubmit)
+	mux.HandleFunc("POST /coach/logout", a.CoachLogout)
+
+	// Раздел планов общий для тренера и админа, поэтому одни и те же хендлеры
+	// монтируются под обоими префиксами (редиректы считает panelBase).
+	planMw := auth.RequirePanel(a.store, auth.RoleAdmin, auth.RoleCoach)
+	for _, base := range []string{"/coach", "/admin"} {
+		mux.HandleFunc("GET "+base+"/plans", planMw(http.HandlerFunc(a.AdminListPlansPage)).ServeHTTP)
+		mux.HandleFunc("GET "+base+"/plans/new", planMw(http.HandlerFunc(a.AdminCreatePlanPage)).ServeHTTP)
+		mux.HandleFunc("POST "+base+"/plans", planMw(http.HandlerFunc(a.AdminCreatePlanSubmit)).ServeHTTP)
+		mux.HandleFunc("GET "+base+"/plans/{id}/edit", planMw(http.HandlerFunc(a.AdminEditPlanPage)).ServeHTTP)
+		mux.HandleFunc("POST "+base+"/plans/{id}", planMw(http.HandlerFunc(a.AdminUpdatePlanSubmit)).ServeHTTP)
+		mux.HandleFunc("POST "+base+"/plans/{id}/publish", planMw(http.HandlerFunc(a.AdminPublishPlanSubmit)).ServeHTTP)
+		mux.HandleFunc("POST "+base+"/plans/{id}/unpublish", planMw(http.HandlerFunc(a.AdminUnpublishPlanSubmit)).ServeHTTP)
+		mux.HandleFunc("POST "+base+"/plans/{id}/notify", planMw(http.HandlerFunc(a.AdminNotifyPlanSubmit)).ServeHTTP)
+		mux.HandleFunc("POST "+base+"/plans/{id}/delete", planMw(http.HandlerFunc(a.AdminDeletePlanSubmit)).ServeHTTP)
+	}
+	mux.HandleFunc("GET /coach", planMw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/coach/plans", http.StatusSeeOther)
+	})).ServeHTTP)
 
 	adminMw := auth.RequireAdminToken(a.store)
 	mux.HandleFunc("GET /admin", adminMw(http.HandlerFunc(a.AdminDashboardPage)).ServeHTTP)
